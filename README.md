@@ -1,2 +1,2 @@
 # TWIPi
-Next generation of inverted pendulum by Doug and Andrew
+Next generation of inverted pendulum Robot by Doug and Andrew
