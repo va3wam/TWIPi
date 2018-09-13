@@ -1,5 +1,5 @@
 # TWIPi
-This repository contains all the information on the fourth iteration of the SegbotSTEP family of robot designs. This repository not only contains C++ source code intended to run on the Adafriot Huzzah32 development board; Java code intended to run on a remote client such as a MAC or PC; EagleCAD schematic and layout files containing the circuit designs of the robot; Fusion 360 files (or pointers to those files on the AutoCAD cloud) used to mill the robot chassis; and all the libraries used by the IDEs that make up the tool chain used to create the robot.  
+This repository contains all the information on the fourth iteration of the SegbotSTEP family of robot designs. This repository not only contains C++ source code intended to run on the Adafruit Huzzah32 development board; Java code intended to run on a remote client such as a MAC or PC; EagleCAD schematic and layout files containing the circuit designs of the robot; Fusion 360 files (or pointers to those files on the AutoCAD cloud) used to mill the robot chassis; and all the libraries used by the IDEs that make up the tool chain used to create the robot.  
 
 ## Getting Started
 
