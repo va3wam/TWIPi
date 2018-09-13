@@ -1,1 +1,1 @@
-THis is the directory where PCB files are placed
+This is the directory where PCB files are placed
