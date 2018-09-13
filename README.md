@@ -42,8 +42,7 @@ This Arduino code was developed using the following set up.
 * [Platformio](https://platformio.org/) - Editor plugin
 * Library Framework - Arduino
 * Hardware platform - espressif32
-* Board - feather32 
-
+* Board - Adafruit Huzzah32 featherboard
 ### Arduino Libraries
 The following additional libraries are used in the Arduino C++ code:
 * https://github.com/Pedroalbuquerque/ESP32WebServer
