@@ -63,7 +63,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors
 
-* Doug - *PID and motor control logic and circuit diagrams*
+* [Doug](https://github.com/nerdoug) - *PID and motor control logic and circuit diagrams*
 * [Andrew](https://github.com/va3wam) - *Initial code porting from ESP128 to ESP32, remote Java client and CAD/CAM designs* 
 
 See also the list of [contributors](https://github.com/va3wam/TWIPi/graphs/contributors) who participated in this project.
