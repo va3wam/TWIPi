@@ -3,7 +3,7 @@ This repository contains all the information on the fourth iteration of the Segb
 
 ## Getting Started
 
-Full details about this project can be read on our [wiki](https://github.com/va3wam/SBSMark3/wiki). 
+Full details about this project can be read on our [wiki](https://github.com/va3wam/TWIPi/wiki). 
 
 ### Prerequisites
 
@@ -55,7 +55,7 @@ The following additional libraries are used in the Arduino C++ code:
 ## Contributing
 
 This project is being developed by a couple of buddies. We are tracking the tasks for this
-effort in a series of small [projects](https://github.com/va3wam/SBSMark3/projects).
+effort in a series of small [projects](https://github.com/va3wam/TWIPi/projects).
 
 ## Versioning
 
@@ -66,7 +66,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 * Doug - *PID and motor control logic and circuit diagrams*
 * Andrew - *Initial code porting from ESP128 to ESP32, remote Java client and CAD/CAM designs* 
 
-See also the list of [contributors](https://github.com/va3wam/SBSMark3/graphs/contributors) who participated in this project.
+See also the list of [contributors](https://github.com/va3wam/TWIPi/graphs/contributors) who participated in this project.
 
 ## License
 
