@@ -59,7 +59,7 @@ effort in a series of small [projects](https://github.com/va3wam/SBSMark3/projec
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/va3wam/SBSMark3/branches/all). 
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/va3wam/TWIPi/branches/all). 
 
 ## Authors
 
