@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "TWIPiArduino",
+			"name": "TWIPiArduino"
+		}
+	],
+	"settings": {
+		"terminal.integrated.env.osx": {
+			"PATH": "/Users/andrewmitchell/.platformio/penv/bin:/Users/andrewmitchell/.platformio/penv:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/andrewmitchell/esp/xtensa-esp32-elf/bin:/Users/andrewmitchell/.mos/bin",
+			"PLATFORMIO_CALLER": "vscode"
+		}
+	}
+}
