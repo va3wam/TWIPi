@@ -5497,15 +5497,13 @@ Source: Samtec TSW.pdf</description>
 <part name="RESET-JUMPER2" library="con-samtec" library_urn="urn:adsk.eagle:library:184" deviceset="TSW-101-*-G-S" device="" technology="07"/>
 <part name="RESET-JUMPER1" library="con-samtec" library_urn="urn:adsk.eagle:library:184" deviceset="TSW-101-*-G-S" device="" technology="07"/>
 <part name="MS2" library="microbuilder" deviceset="FEATHERWING" device="_NOHOLES"/>
+<part name="C3" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-US" device="025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value="100 uF"/>
+<part name="C4" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-US" device="025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value="100 uF"/>
 </parts>
 <sheets>
 <sheet>
 <plain>
 <text x="119.38" y="152.4" size="1.778" layer="91">GPIOs are wrong for ESP32</text>
-<text x="129.54" y="132.08" size="1.778" layer="91">G12</text>
-<text x="127" y="144.78" size="1.778" layer="91">G14</text>
-<text x="129.54" y="129.54" size="1.778" layer="91">G13</text>
-<text x="127" y="139.7" size="1.778" layer="91">G15</text>
 <text x="139.7" y="149.86" size="1.778" layer="91">G21</text>
 <text x="43.18" y="198.12" size="1.778" layer="91">Need to connect 12V ground and 5V ground together
 as a place that isolates motor noise</text>
@@ -5514,16 +5512,18 @@ as a place that isolates motor noise</text>
 </plain>
 <instances>
 <instance part="U1" gate="G$1" x="132.08" y="193.04" rot="R270"/>
-<instance part="LCD-HEADER" gate="1" x="134.62" y="86.36" rot="R270"/>
+<instance part="LCD-HEADER" gate="1" x="134.62" y="91.44" rot="R270"/>
 <instance part="CPU-USB-HEADER" gate="1" x="165.1" y="68.58" rot="R270"/>
 <instance part="IBC" gate="G$1" x="132.08" y="45.72" rot="R180"/>
 <instance part="STEPDRV1" gate="G$1" x="190.5" y="27.94" rot="R180"/>
 <instance part="STEPDRV2" gate="G$1" x="73.66" y="27.94"/>
 <instance part="C1" gate="G$1" x="167.64" y="12.7" rot="R180"/>
 <instance part="C2" gate="G$1" x="101.6" y="43.18"/>
-<instance part="RESET-JUMPER2" gate="-1" x="151.13" y="76.2"/>
+<instance part="RESET-JUMPER2" gate="-1" x="153.67" y="73.66"/>
 <instance part="RESET-JUMPER1" gate="-1" x="163.83" y="99.06"/>
 <instance part="MS2" gate="G$1" x="149.86" y="106.68" rot="R90"/>
+<instance part="C3" gate="G$1" x="165.1" y="132.08"/>
+<instance part="C4" gate="G$1" x="160.02" y="203.2"/>
 </instances>
 <busses>
 </busses>
@@ -5574,39 +5574,15 @@ as a place that isolates motor noise</text>
 </net>
 <net name="N$19" class="0">
 <segment>
-<pinref part="LCD-HEADER" gate="1" pin="1"/>
-<wire x1="129.54" y1="78.74" x2="129.54" y2="149.86" width="0.1524" layer="91"/>
 <wire x1="129.54" y1="149.86" x2="129.54" y2="185.42" width="0.1524" layer="91"/>
 <wire x1="129.54" y1="185.42" x2="132.08" y2="185.42" width="0.1524" layer="91"/>
 <pinref part="U1" gate="G$1" pin="SDA"/>
 <wire x1="132.08" y1="185.42" x2="132.08" y2="208.28" width="0.1524" layer="91"/>
 <pinref part="MS2" gate="G$1" pin="GPIOSDA"/>
 <wire x1="111.76" y1="149.86" x2="129.54" y2="149.86" width="0.1524" layer="91"/>
-<wire x1="129.54" y1="149.86" x2="129.54" y2="78.74" width="0.1524" layer="91"/>
-<junction x="129.54" y="78.74"/>
+<pinref part="LCD-HEADER" gate="1" pin="1"/>
+<wire x1="129.54" y1="149.86" x2="129.54" y2="83.82" width="0.1524" layer="91"/>
 <junction x="129.54" y="149.86"/>
-</segment>
-</net>
-<net name="N$21" class="0">
-<segment>
-<wire x1="142.24" y1="91.44" x2="210.82" y2="91.44" width="0.1524" layer="91"/>
-<pinref part="STEPDRV1" gate="G$1" pin="STEP"/>
-<wire x1="210.82" y1="91.44" x2="210.82" y2="38.1" width="0.1524" layer="91"/>
-<wire x1="210.82" y1="38.1" x2="205.74" y2="38.1" width="0.1524" layer="91"/>
-<wire x1="142.24" y1="91.44" x2="142.24" y2="121.92" width="0.1524" layer="91"/>
-<pinref part="MS2" gate="G$1" pin="GPIOA0"/>
-<wire x1="142.24" y1="121.92" x2="154.94" y2="121.92" width="0.1524" layer="91"/>
-</segment>
-</net>
-<net name="N$26" class="0">
-<segment>
-<wire x1="139.7" y1="88.9" x2="208.28" y2="88.9" width="0.1524" layer="91"/>
-<wire x1="208.28" y1="88.9" x2="208.28" y2="40.64" width="0.1524" layer="91"/>
-<pinref part="STEPDRV1" gate="G$1" pin="DIR"/>
-<wire x1="208.28" y1="40.64" x2="205.74" y2="40.64" width="0.1524" layer="91"/>
-<wire x1="139.7" y1="88.9" x2="139.7" y2="124.46" width="0.1524" layer="91"/>
-<pinref part="MS2" gate="G$1" pin="GPIOA1"/>
-<wire x1="139.7" y1="124.46" x2="154.94" y2="124.46" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$27" class="0">
@@ -5738,17 +5714,6 @@ as a place that isolates motor noise</text>
 <wire x1="116.84" y1="33.02" x2="91.44" y2="33.02" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$11" class="0">
-<segment>
-<pinref part="MS2" gate="G$1" pin="GPIO13"/>
-<wire x1="111.76" y1="129.54" x2="121.92" y2="129.54" width="0.1524" layer="91"/>
-<wire x1="121.92" y1="129.54" x2="121.92" y2="78.74" width="0.1524" layer="91"/>
-<wire x1="109.22" y1="50.8" x2="109.22" y2="78.74" width="0.1524" layer="91"/>
-<wire x1="109.22" y1="78.74" x2="121.92" y2="78.74" width="0.1524" layer="91"/>
-<pinref part="IBC" gate="G$1" pin="8"/>
-<wire x1="124.46" y1="50.8" x2="109.22" y2="50.8" width="0.1524" layer="91"/>
-</segment>
-</net>
 <net name="N$13" class="0">
 <segment>
 <pinref part="IBC" gate="G$1" pin="23"/>
@@ -5782,26 +5747,6 @@ as a place that isolates motor noise</text>
 <wire x1="167.64" y1="48.26" x2="167.64" y2="60.96" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$33" class="0">
-<segment>
-<pinref part="LCD-HEADER" gate="1" pin="3"/>
-<wire x1="134.62" y1="78.74" x2="134.62" y2="73.66" width="0.1524" layer="91"/>
-<pinref part="IBC" gate="G$1" pin="11"/>
-<wire x1="124.46" y1="58.42" x2="116.84" y2="58.42" width="0.1524" layer="91"/>
-<wire x1="116.84" y1="58.42" x2="116.84" y2="73.66" width="0.1524" layer="91"/>
-<wire x1="116.84" y1="73.66" x2="134.62" y2="73.66" width="0.1524" layer="91"/>
-</segment>
-</net>
-<net name="N$34" class="0">
-<segment>
-<pinref part="LCD-HEADER" gate="1" pin="4"/>
-<wire x1="137.16" y1="78.74" x2="137.16" y2="71.12" width="0.1524" layer="91"/>
-<wire x1="137.16" y1="71.12" x2="119.38" y2="71.12" width="0.1524" layer="91"/>
-<wire x1="119.38" y1="71.12" x2="119.38" y2="60.96" width="0.1524" layer="91"/>
-<pinref part="IBC" gate="G$1" pin="12"/>
-<wire x1="119.38" y1="60.96" x2="124.46" y2="60.96" width="0.1524" layer="91"/>
-</segment>
-</net>
 <net name="N$35" class="0">
 <segment>
 <pinref part="STEPDRV2" gate="G$1" pin="GND@1"/>
@@ -5809,27 +5754,41 @@ as a place that isolates motor noise</text>
 <wire x1="91.44" y1="2.54" x2="27.94" y2="2.54" width="0.1524" layer="91"/>
 <pinref part="U1" gate="G$1" pin="GND"/>
 <wire x1="142.24" y1="218.44" x2="142.24" y2="208.28" width="0.1524" layer="91"/>
-<wire x1="142.24" y1="218.44" x2="116.84" y2="218.44" width="0.1524" layer="91"/>
-<pinref part="U1" gate="G$1" pin="ADO"/>
-<wire x1="116.84" y1="218.44" x2="116.84" y2="208.28" width="0.1524" layer="91"/>
 <wire x1="142.24" y1="190.5" x2="142.24" y2="208.28" width="0.1524" layer="91"/>
 <junction x="142.24" y="208.28"/>
 <wire x1="27.94" y1="2.54" x2="27.94" y2="218.44" width="0.1524" layer="91"/>
 <wire x1="27.94" y1="218.44" x2="116.84" y2="218.44" width="0.1524" layer="91"/>
-<junction x="116.84" y="218.44"/>
 <pinref part="MS2" gate="G$1" pin="GND"/>
+<wire x1="116.84" y1="218.44" x2="142.24" y2="218.44" width="0.1524" layer="91"/>
+<wire x1="144.78" y1="119.38" x2="154.94" y2="119.38" width="0.1524" layer="91"/>
+<wire x1="154.94" y1="119.38" x2="160.02" y2="119.38" width="0.1524" layer="91"/>
+<junction x="154.94" y="119.38"/>
+<wire x1="160.02" y1="119.38" x2="160.02" y2="190.5" width="0.1524" layer="91"/>
+<wire x1="142.24" y1="190.5" x2="160.02" y2="190.5" width="0.1524" layer="91"/>
+<wire x1="144.78" y1="119.38" x2="144.78" y2="104.14" width="0.1524" layer="91"/>
+<pinref part="U1" gate="G$1" pin="ADO"/>
+<wire x1="116.84" y1="208.28" x2="116.84" y2="218.44" width="0.1524" layer="91"/>
+<junction x="116.84" y="218.44"/>
 <pinref part="STEPDRV1" gate="G$1" pin="GND@1"/>
 <wire x1="193.04" y1="40.64" x2="172.72" y2="40.64" width="0.1524" layer="91"/>
 <wire x1="193.04" y1="7.62" x2="193.04" y2="40.64" width="0.1524" layer="91"/>
 <wire x1="193.04" y1="7.62" x2="215.9" y2="7.62" width="0.1524" layer="91"/>
+<wire x1="154.94" y1="93.98" x2="215.9" y2="93.98" width="0.1524" layer="91"/>
 <wire x1="215.9" y1="93.98" x2="215.9" y2="7.62" width="0.1524" layer="91"/>
-<wire x1="144.78" y1="93.98" x2="215.9" y2="93.98" width="0.1524" layer="91"/>
-<wire x1="144.78" y1="93.98" x2="144.78" y2="119.38" width="0.1524" layer="91"/>
-<wire x1="144.78" y1="119.38" x2="154.94" y2="119.38" width="0.1524" layer="91"/>
-<wire x1="154.94" y1="119.38" x2="167.64" y2="119.38" width="0.1524" layer="91"/>
-<junction x="154.94" y="119.38"/>
-<wire x1="167.64" y1="119.38" x2="167.64" y2="190.5" width="0.1524" layer="91"/>
-<wire x1="142.24" y1="190.5" x2="167.64" y2="190.5" width="0.1524" layer="91"/>
+<wire x1="144.78" y1="104.14" x2="154.94" y2="93.98" width="0.1524" layer="91"/>
+<pinref part="LCD-HEADER" gate="1" pin="4"/>
+<wire x1="137.16" y1="83.82" x2="137.16" y2="76.2" width="0.1524" layer="91"/>
+<wire x1="137.16" y1="76.2" x2="76.2" y2="76.2" width="0.1524" layer="91"/>
+<wire x1="76.2" y1="76.2" x2="76.2" y2="15.24" width="0.1524" layer="91"/>
+<wire x1="76.2" y1="15.24" x2="91.44" y2="15.24" width="0.1524" layer="91"/>
+<junction x="91.44" y="15.24"/>
+<pinref part="C4" gate="G$1" pin="2"/>
+<wire x1="160.02" y1="198.12" x2="160.02" y2="190.5" width="0.1524" layer="91"/>
+<junction x="160.02" y="190.5"/>
+<wire x1="160.02" y1="119.38" x2="165.1" y2="119.38" width="0.1524" layer="91"/>
+<junction x="160.02" y="119.38"/>
+<pinref part="C3" gate="G$1" pin="2"/>
+<wire x1="165.1" y1="119.38" x2="165.1" y2="127" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="3V" class="0">
@@ -5848,11 +5807,28 @@ as a place that isolates motor noise</text>
 <wire x1="154.94" y1="114.3" x2="175.26" y2="114.3" width="0.1524" layer="91"/>
 <pinref part="U1" gate="G$1" pin="VCC"/>
 <wire x1="175.26" y1="114.3" x2="218.44" y2="114.3" width="0.1524" layer="91"/>
-<wire x1="172.72" y1="213.36" x2="147.32" y2="213.36" width="0.1524" layer="91"/>
+<wire x1="175.26" y1="213.36" x2="160.02" y2="213.36" width="0.1524" layer="91"/>
+<wire x1="160.02" y1="213.36" x2="147.32" y2="213.36" width="0.1524" layer="91"/>
 <wire x1="147.32" y1="213.36" x2="147.32" y2="208.28" width="0.1524" layer="91"/>
-<wire x1="172.72" y1="213.36" x2="175.26" y2="213.36" width="0.1524" layer="91"/>
-<wire x1="175.26" y1="213.36" x2="175.26" y2="114.3" width="0.1524" layer="91"/>
+<wire x1="175.26" y1="213.36" x2="175.26" y2="139.7" width="0.1524" layer="91"/>
 <junction x="175.26" y="114.3"/>
+<wire x1="175.26" y1="139.7" x2="175.26" y2="114.3" width="0.1524" layer="91"/>
+<wire x1="144.78" y1="73.66" x2="78.74" y2="73.66" width="0.1524" layer="91"/>
+<wire x1="78.74" y1="73.66" x2="78.74" y2="17.78" width="0.1524" layer="91"/>
+<wire x1="78.74" y1="17.78" x2="91.44" y2="17.78" width="0.1524" layer="91"/>
+<junction x="91.44" y="17.78"/>
+<wire x1="144.78" y1="73.66" x2="144.78" y2="91.44" width="0.1524" layer="91"/>
+<wire x1="144.78" y1="91.44" x2="139.7" y2="96.52" width="0.1524" layer="91"/>
+<wire x1="139.7" y1="96.52" x2="134.62" y2="96.52" width="0.1524" layer="91"/>
+<pinref part="LCD-HEADER" gate="1" pin="3"/>
+<wire x1="134.62" y1="96.52" x2="134.62" y2="83.82" width="0.1524" layer="91"/>
+<pinref part="C4" gate="G$1" pin="1"/>
+<wire x1="160.02" y1="205.74" x2="160.02" y2="213.36" width="0.1524" layer="91"/>
+<junction x="160.02" y="213.36"/>
+<pinref part="C3" gate="G$1" pin="1"/>
+<wire x1="165.1" y1="134.62" x2="165.1" y2="139.7" width="0.1524" layer="91"/>
+<wire x1="165.1" y1="139.7" x2="175.26" y2="139.7" width="0.1524" layer="91"/>
+<junction x="175.26" y="139.7"/>
 </segment>
 </net>
 <net name="N$1" class="0">
@@ -5862,23 +5838,61 @@ as a place that isolates motor noise</text>
 <wire x1="121.92" y1="63.5" x2="121.92" y2="68.58" width="0.1524" layer="91"/>
 <wire x1="121.92" y1="68.58" x2="148.59" y2="68.58" width="0.1524" layer="91"/>
 <pinref part="RESET-JUMPER2" gate="-1" pin="1"/>
-<wire x1="148.59" y1="76.2" x2="148.59" y2="68.58" width="0.1524" layer="91"/>
+<wire x1="151.13" y1="73.66" x2="148.59" y2="68.58" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$5" class="0">
 <segment>
-<wire x1="124.46" y1="147.32" x2="124.46" y2="76.2" width="0.1524" layer="91"/>
-<pinref part="MS2" gate="G$1" pin="GPIOSCL"/>
-<wire x1="111.76" y1="147.32" x2="124.46" y2="147.32" width="0.1524" layer="91"/>
-<wire x1="124.46" y1="76.2" x2="132.08" y2="76.2" width="0.1524" layer="91"/>
-<pinref part="LCD-HEADER" gate="1" pin="2"/>
-<wire x1="132.08" y1="78.74" x2="132.08" y2="182.88" width="0.1524" layer="91"/>
-<wire x1="132.08" y1="182.88" x2="137.16" y2="182.88" width="0.1524" layer="91"/>
+<pinref part="MS2" gate="G$1" pin="GPIOA0"/>
+<wire x1="142.24" y1="121.92" x2="154.94" y2="121.92" width="0.1524" layer="91"/>
+<wire x1="142.24" y1="121.92" x2="142.24" y2="104.14" width="0.1524" layer="91"/>
+<pinref part="STEPDRV1" gate="G$1" pin="STEP"/>
+<wire x1="154.94" y1="91.44" x2="210.82" y2="91.44" width="0.1524" layer="91"/>
+<wire x1="210.82" y1="91.44" x2="210.82" y2="38.1" width="0.1524" layer="91"/>
+<wire x1="210.82" y1="38.1" x2="205.74" y2="38.1" width="0.1524" layer="91"/>
+<wire x1="142.24" y1="104.14" x2="154.94" y2="91.44" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$15" class="0">
+<segment>
+<pinref part="MS2" gate="G$1" pin="GPIOA1"/>
+<wire x1="139.7" y1="124.46" x2="154.94" y2="124.46" width="0.1524" layer="91"/>
+<wire x1="139.7" y1="124.46" x2="139.7" y2="104.14" width="0.1524" layer="91"/>
+<wire x1="154.94" y1="88.9" x2="208.28" y2="88.9" width="0.1524" layer="91"/>
+<wire x1="208.28" y1="88.9" x2="208.28" y2="40.64" width="0.1524" layer="91"/>
+<pinref part="STEPDRV1" gate="G$1" pin="DIR"/>
+<wire x1="208.28" y1="40.64" x2="205.74" y2="40.64" width="0.1524" layer="91"/>
+<wire x1="139.7" y1="104.14" x2="154.94" y2="88.9" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$28" class="0">
+<segment>
+<pinref part="MS2" gate="G$1" pin="GPIOA4"/>
+<wire x1="137.16" y1="104.14" x2="137.16" y2="132.08" width="0.1524" layer="91"/>
+<wire x1="137.16" y1="132.08" x2="154.94" y2="132.08" width="0.1524" layer="91"/>
+<wire x1="137.16" y1="104.14" x2="147.32" y2="93.98" width="0.1524" layer="91"/>
+<wire x1="147.32" y1="93.98" x2="147.32" y2="71.12" width="0.1524" layer="91"/>
+<wire x1="116.84" y1="71.12" x2="147.32" y2="71.12" width="0.1524" layer="91"/>
+<pinref part="IBC" gate="G$1" pin="8"/>
+<wire x1="124.46" y1="50.8" x2="116.84" y2="50.8" width="0.1524" layer="91"/>
+<wire x1="116.84" y1="50.8" x2="116.84" y2="71.12" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$11" class="0">
+<segment>
 <pinref part="U1" gate="G$1" pin="SCL"/>
 <wire x1="137.16" y1="182.88" x2="137.16" y2="208.28" width="0.1524" layer="91"/>
-<wire x1="132.08" y1="147.32" x2="132.08" y2="78.74" width="0.1524" layer="91"/>
-<junction x="132.08" y="78.74"/>
-<wire x1="132.08" y1="76.2" x2="132.08" y2="78.74" width="0.1524" layer="91"/>
+<wire x1="137.16" y1="182.88" x2="132.08" y2="182.88" width="0.1524" layer="91"/>
+<pinref part="LCD-HEADER" gate="1" pin="2"/>
+<wire x1="132.08" y1="182.88" x2="132.08" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="132.08" y1="83.82" x2="132.08" y2="78.74" width="0.1524" layer="91"/>
+<junction x="132.08" y="83.82"/>
+<wire x1="121.92" y1="99.06" x2="121.92" y2="78.74" width="0.1524" layer="91"/>
+<wire x1="127" y1="99.06" x2="121.92" y2="99.06" width="0.1524" layer="91"/>
+<wire x1="127" y1="147.32" x2="127" y2="99.06" width="0.1524" layer="91"/>
+<pinref part="MS2" gate="G$1" pin="GPIOSCL"/>
+<wire x1="111.76" y1="147.32" x2="127" y2="147.32" width="0.1524" layer="91"/>
+<wire x1="132.08" y1="78.74" x2="121.92" y2="78.74" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>
