@@ -5492,13 +5492,13 @@ Source: Samtec TSW.pdf</description>
 <part name="IBC" library="con-subd" library_urn="urn:adsk.eagle:library:189" deviceset="M25VP" device="" package3d_urn="urn:adsk.eagle:package:10253/1"/>
 <part name="STEPDRV1" library="stepper_drivers_etc" deviceset="POLOLULU2128" device=""/>
 <part name="STEPDRV2" library="stepper_drivers_etc" deviceset="POLOLULU2128" device=""/>
-<part name="C1" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-US" device="025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value="100 uF"/>
-<part name="C2" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-US" device="025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value="100 uF"/>
+<part name="C1" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-US" device="025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value=".1 uF"/>
+<part name="C2" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-US" device="025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value=".1 uF"/>
 <part name="RESET-JUMPER2" library="con-samtec" library_urn="urn:adsk.eagle:library:184" deviceset="TSW-101-*-G-S" device="" technology="07"/>
 <part name="RESET-JUMPER1" library="con-samtec" library_urn="urn:adsk.eagle:library:184" deviceset="TSW-101-*-G-S" device="" technology="07"/>
 <part name="MS2" library="microbuilder" deviceset="FEATHERWING" device="_NOHOLES"/>
-<part name="C3" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-US" device="025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value="100 uF"/>
-<part name="C4" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-US" device="025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value="100 uF"/>
+<part name="C3" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-US" device="025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value=".1 uF"/>
+<part name="C4" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-US" device="025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value=".1 uF"/>
 </parts>
 <sheets>
 <sheet>
@@ -5508,12 +5508,11 @@ Source: Samtec TSW.pdf</description>
 <text x="43.18" y="198.12" size="1.778" layer="91">Need to connect 12V ground and 5V ground together
 as a place that isolates motor noise</text>
 <text x="109.22" y="220.98" size="1.778" layer="91">TWIP Main Board Schematic    Version 5     2018/09/02</text>
-<text x="88.9" y="50.8" size="1.778" layer="91"> .1 uF in parallel</text>
 </plain>
 <instances>
 <instance part="U1" gate="G$1" x="132.08" y="193.04" rot="R270"/>
 <instance part="LCD-HEADER" gate="1" x="134.62" y="91.44" rot="R270"/>
-<instance part="CPU-USB-HEADER" gate="1" x="165.1" y="68.58" rot="R270"/>
+<instance part="CPU-USB-HEADER" gate="1" x="165.1" y="63.5" rot="R90"/>
 <instance part="IBC" gate="G$1" x="132.08" y="45.72" rot="R180"/>
 <instance part="STEPDRV1" gate="G$1" x="190.5" y="27.94" rot="R180"/>
 <instance part="STEPDRV2" gate="G$1" x="73.66" y="27.94"/>
@@ -5603,22 +5602,6 @@ as a place that isolates motor noise</text>
 <wire x1="50.8" y1="142.24" x2="111.76" y2="142.24" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$17" class="0">
-<segment>
-<pinref part="STEPDRV2" gate="G$1" pin="VMOT"/>
-<wire x1="96.52" y1="48.26" x2="96.52" y2="40.64" width="0.1524" layer="91"/>
-<wire x1="96.52" y1="40.64" x2="91.44" y2="40.64" width="0.1524" layer="91"/>
-<wire x1="96.52" y1="48.26" x2="101.6" y2="48.26" width="0.1524" layer="91"/>
-<pinref part="C2" gate="G$1" pin="1"/>
-<wire x1="101.6" y1="48.26" x2="109.22" y2="48.26" width="0.1524" layer="91"/>
-<wire x1="101.6" y1="45.72" x2="101.6" y2="48.26" width="0.1524" layer="91"/>
-<junction x="101.6" y="48.26"/>
-<wire x1="109.22" y1="48.26" x2="114.3" y2="48.26" width="0.1524" layer="91"/>
-<wire x1="114.3" y1="48.26" x2="114.3" y2="45.72" width="0.1524" layer="91"/>
-<pinref part="IBC" gate="G$1" pin="6"/>
-<wire x1="114.3" y1="45.72" x2="124.46" y2="45.72" width="0.1524" layer="91"/>
-</segment>
-</net>
 <net name="N$16" class="0">
 <segment>
 <pinref part="RESET-JUMPER1" gate="-1" pin="1"/>
@@ -5636,11 +5619,13 @@ as a place that isolates motor noise</text>
 <wire x1="96.52" y1="38.1" x2="96.52" y2="35.56" width="0.1524" layer="91"/>
 <pinref part="STEPDRV2" gate="G$1" pin="GND@0"/>
 <wire x1="91.44" y1="38.1" x2="96.52" y2="38.1" width="0.1524" layer="91"/>
-<wire x1="101.6" y1="35.56" x2="114.3" y2="35.56" width="0.1524" layer="91"/>
-<junction x="101.6" y="35.56"/>
-<wire x1="114.3" y1="35.56" x2="114.3" y2="43.18" width="0.1524" layer="91"/>
-<pinref part="IBC" gate="G$1" pin="5"/>
-<wire x1="114.3" y1="43.18" x2="124.46" y2="43.18" width="0.1524" layer="91"/>
+<wire x1="91.44" y1="38.1" x2="81.28" y2="38.1" width="0.1524" layer="91"/>
+<junction x="91.44" y="38.1"/>
+<wire x1="81.28" y1="38.1" x2="81.28" y2="50.8" width="0.1524" layer="91"/>
+<wire x1="81.28" y1="50.8" x2="114.3" y2="50.8" width="0.1524" layer="91"/>
+<wire x1="114.3" y1="50.8" x2="116.84" y2="48.26" width="0.1524" layer="91"/>
+<pinref part="IBC" gate="G$1" pin="7"/>
+<wire x1="116.84" y1="48.26" x2="124.46" y2="48.26" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$3" class="0">
@@ -5717,34 +5702,33 @@ as a place that isolates motor noise</text>
 <net name="N$13" class="0">
 <segment>
 <pinref part="IBC" gate="G$1" pin="23"/>
-<wire x1="139.7" y1="55.88" x2="160.02" y2="55.88" width="0.1524" layer="91"/>
-<pinref part="CPU-USB-HEADER" gate="1" pin="1"/>
-<wire x1="160.02" y1="55.88" x2="160.02" y2="60.96" width="0.1524" layer="91"/>
+<wire x1="139.7" y1="55.88" x2="162.56" y2="55.88" width="0.1524" layer="91"/>
+<pinref part="CPU-USB-HEADER" gate="1" pin="4"/>
+<wire x1="162.56" y1="71.12" x2="162.56" y2="55.88" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$14" class="0">
 <segment>
 <pinref part="IBC" gate="G$1" pin="22"/>
-<wire x1="139.7" y1="53.34" x2="162.56" y2="53.34" width="0.1524" layer="91"/>
-<wire x1="162.56" y1="53.34" x2="162.56" y2="55.88" width="0.1524" layer="91"/>
-<pinref part="CPU-USB-HEADER" gate="1" pin="2"/>
-<wire x1="162.56" y1="55.88" x2="162.56" y2="60.96" width="0.1524" layer="91"/>
+<wire x1="139.7" y1="53.34" x2="165.1" y2="53.34" width="0.1524" layer="91"/>
+<pinref part="CPU-USB-HEADER" gate="1" pin="3"/>
+<wire x1="165.1" y1="71.12" x2="165.1" y2="53.34" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$18" class="0">
 <segment>
 <pinref part="IBC" gate="G$1" pin="21"/>
-<wire x1="139.7" y1="50.8" x2="165.1" y2="50.8" width="0.1524" layer="91"/>
-<pinref part="CPU-USB-HEADER" gate="1" pin="3"/>
-<wire x1="165.1" y1="50.8" x2="165.1" y2="60.96" width="0.1524" layer="91"/>
+<wire x1="139.7" y1="50.8" x2="167.64" y2="50.8" width="0.1524" layer="91"/>
+<pinref part="CPU-USB-HEADER" gate="1" pin="2"/>
+<wire x1="167.64" y1="71.12" x2="167.64" y2="50.8" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$30" class="0">
 <segment>
 <pinref part="IBC" gate="G$1" pin="20"/>
-<wire x1="139.7" y1="48.26" x2="167.64" y2="48.26" width="0.1524" layer="91"/>
-<pinref part="CPU-USB-HEADER" gate="1" pin="4"/>
-<wire x1="167.64" y1="48.26" x2="167.64" y2="60.96" width="0.1524" layer="91"/>
+<wire x1="139.7" y1="48.26" x2="170.18" y2="48.26" width="0.1524" layer="91"/>
+<pinref part="CPU-USB-HEADER" gate="1" pin="1"/>
+<wire x1="170.18" y1="71.12" x2="170.18" y2="48.26" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$35" class="0">
@@ -5872,10 +5856,10 @@ as a place that isolates motor noise</text>
 <wire x1="137.16" y1="132.08" x2="154.94" y2="132.08" width="0.1524" layer="91"/>
 <wire x1="137.16" y1="104.14" x2="147.32" y2="93.98" width="0.1524" layer="91"/>
 <wire x1="147.32" y1="93.98" x2="147.32" y2="71.12" width="0.1524" layer="91"/>
-<wire x1="116.84" y1="71.12" x2="147.32" y2="71.12" width="0.1524" layer="91"/>
+<wire x1="119.38" y1="71.12" x2="147.32" y2="71.12" width="0.1524" layer="91"/>
 <pinref part="IBC" gate="G$1" pin="8"/>
-<wire x1="124.46" y1="50.8" x2="116.84" y2="50.8" width="0.1524" layer="91"/>
-<wire x1="116.84" y1="50.8" x2="116.84" y2="71.12" width="0.1524" layer="91"/>
+<wire x1="124.46" y1="50.8" x2="119.38" y2="50.8" width="0.1524" layer="91"/>
+<wire x1="119.38" y1="50.8" x2="119.38" y2="71.12" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$11" class="0">
@@ -5893,6 +5877,21 @@ as a place that isolates motor noise</text>
 <pinref part="MS2" gate="G$1" pin="GPIOSCL"/>
 <wire x1="111.76" y1="147.32" x2="127" y2="147.32" width="0.1524" layer="91"/>
 <wire x1="132.08" y1="78.74" x2="121.92" y2="78.74" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$21" class="0">
+<segment>
+<pinref part="IBC" gate="G$1" pin="6"/>
+<pinref part="STEPDRV2" gate="G$1" pin="VMOT"/>
+<wire x1="116.84" y1="45.72" x2="124.46" y2="45.72" width="0.1524" layer="91"/>
+<wire x1="96.52" y1="48.26" x2="96.52" y2="40.64" width="0.1524" layer="91"/>
+<wire x1="96.52" y1="40.64" x2="91.44" y2="40.64" width="0.1524" layer="91"/>
+<wire x1="96.52" y1="48.26" x2="101.6" y2="48.26" width="0.1524" layer="91"/>
+<pinref part="C2" gate="G$1" pin="1"/>
+<wire x1="101.6" y1="48.26" x2="114.3" y2="48.26" width="0.1524" layer="91"/>
+<wire x1="101.6" y1="45.72" x2="101.6" y2="48.26" width="0.1524" layer="91"/>
+<junction x="101.6" y="48.26"/>
+<wire x1="116.84" y1="45.72" x2="114.3" y2="48.26" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>

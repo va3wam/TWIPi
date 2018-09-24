@@ -1783,10 +1783,10 @@ design rules under a new name.</description>
 <attribute name="OC_FARNELL" value="unknown" x="50.8" y="30.48" size="1.778" layer="27" rot="R90" display="off"/>
 <attribute name="OC_NEWARK" value="unknown" x="50.8" y="30.48" size="1.778" layer="27" rot="R90" display="off"/>
 </element>
-<element name="C1" library="rcl" library_urn="urn:adsk.eagle:library:334" package="C025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value="100 uF" x="59.69" y="10.16" rot="R90">
+<element name="C1" library="rcl" library_urn="urn:adsk.eagle:library:334" package="C025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value=".1 uF" x="59.69" y="10.16" rot="R90">
 <attribute name="SPICEPREFIX" value="C" x="59.69" y="10.16" size="1.778" layer="27" rot="R90" display="off"/>
 </element>
-<element name="C2" library="rcl" library_urn="urn:adsk.eagle:library:334" package="C025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value="100 uF" x="43.18" y="30.48" rot="R270">
+<element name="C2" library="rcl" library_urn="urn:adsk.eagle:library:334" package="C025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value=".1 uF" x="43.18" y="30.48" rot="R270">
 <attribute name="SPICEPREFIX" value="C" x="43.18" y="30.48" size="1.778" layer="27" rot="R270" display="off"/>
 </element>
 <element name="CPU-USB-HEADER" library="con-lstb" library_urn="urn:adsk.eagle:library:162" package="MA04-1" package3d_urn="urn:adsk.eagle:package:8337/1" value="" x="68.58" y="35.56" rot="R270">
@@ -1817,10 +1817,10 @@ design rules under a new name.</description>
 <element name="STEPDRV2" library="stepper_drivers_etc" package="POLOLULU2128" value="POLOLULU2128" x="35.56" y="17.78"/>
 <element name="U1" library="gy-521" package="GY-521" value="GY-521MPU6050" x="52.07" y="66.04" rot="R270"/>
 <element name="MS2" library="microbuilder" package="FEATHERWING_NOHOLES" value="FEATHERWING_NOHOLES" x="36.83" y="29.21" rot="R90"/>
-<element name="C3" library="rcl" library_urn="urn:adsk.eagle:library:334" package="C025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value="100 uF" x="40.64" y="66.04" rot="R90">
+<element name="C3" library="rcl" library_urn="urn:adsk.eagle:library:334" package="C025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value=".1 uF" x="40.64" y="66.04" rot="R90">
 <attribute name="SPICEPREFIX" value="C" x="40.64" y="66.04" size="1.778" layer="27" rot="R90" display="off"/>
 </element>
-<element name="C4" library="rcl" library_urn="urn:adsk.eagle:library:334" package="C025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value="100 uF" x="67.31" y="73.66" rot="R90">
+<element name="C4" library="rcl" library_urn="urn:adsk.eagle:library:334" package="C025-024X044" package3d_urn="urn:adsk.eagle:package:23630/1" value=".1 uF" x="67.31" y="73.66" rot="R90">
 <attribute name="SPICEPREFIX" value="C" x="67.31" y="73.66" size="1.778" layer="27" rot="R90" display="off"/>
 </element>
 </elements>
@@ -1887,15 +1887,6 @@ design rules under a new name.</description>
 <wire x1="26.67" y1="11.43" x2="15.24" y2="11.43" width="0.1524" layer="1"/>
 <wire x1="15.24" y1="11.43" x2="12.7" y2="13.97" width="0.1524" layer="1"/>
 </signal>
-<signal name="N$17">
-<contactref element="STEPDRV2" pad="16"/>
-<contactref element="C2" pad="1"/>
-<contactref element="IBC" pad="6"/>
-<wire x1="43.18" y1="31.75" x2="40.64" y2="29.21" width="0.1524" layer="1"/>
-<wire x1="45.5676" y1="31.5214" x2="49.3776" y2="27.7114" width="0.1524" layer="1"/>
-<wire x1="40.64" y1="29.21" x2="40.64" y2="25.4" width="0.1524" layer="1"/>
-<wire x1="43.18" y1="31.75" x2="45.5676" y2="31.5214" width="0.1524" layer="1"/>
-</signal>
 <signal name="N$16">
 <contactref element="RESET-JUMPER1" pad="1"/>
 <contactref element="MS2" pad="1"/>
@@ -1905,24 +1896,32 @@ design rules under a new name.</description>
 <signal name="N$2">
 <contactref element="C2" pad="2"/>
 <contactref element="STEPDRV2" pad="15"/>
-<contactref element="IBC" pad="5"/>
-<wire x1="43.18" y1="25.4" x2="40.64" y2="22.86" width="0.1524" layer="1"/>
-<wire x1="45.5676" y1="28.7782" x2="49.3776" y2="24.9682" width="0.1524" layer="1"/>
-<wire x1="43.18" y1="29.21" x2="44.45" y2="29.21" width="0.1524" layer="1"/>
-<wire x1="44.45" y1="29.21" x2="45.5676" y2="28.7782" width="0.1524" layer="1"/>
-<wire x1="43.18" y1="29.21" x2="43.18" y2="25.4" width="0.1524" layer="1"/>
+<wire x1="43.18" y1="24.13" x2="41.91" y2="22.86" width="0.1524" layer="1"/>
+<wire x1="43.18" y1="29.21" x2="43.18" y2="24.13" width="0.1524" layer="1"/>
+<contactref element="IBC" pad="7"/>
+<wire x1="40.64" y1="22.86" x2="38.1" y2="22.86" width="0.1524" layer="1"/>
+<wire x1="38.1" y1="22.86" x2="38.1" y2="30.48" width="0.1524" layer="1"/>
+<wire x1="38.1" y1="30.48" x2="43.18" y2="35.56" width="0.1524" layer="1"/>
+<wire x1="44.2976" y1="35.56" x2="49.3776" y2="30.48" width="0.1524" layer="1"/>
+<wire x1="43.18" y1="35.56" x2="44.2976" y2="35.56" width="0.1524" layer="1"/>
+<wire x1="41.91" y1="22.86" x2="40.64" y2="22.86" width="0.1524" layer="1"/>
 </signal>
 <signal name="N$3">
 <contactref element="STEPDRV1" pad="14"/>
 <contactref element="IBC" pad="16"/>
-<wire x1="52.2224" y1="20.828" x2="59.0804" y2="13.97" width="0.1524" layer="1"/>
-<wire x1="59.0804" y1="13.97" x2="64.77" y2="13.97" width="0.1524" layer="1"/>
+<wire x1="52.2224" y1="20.828" x2="57.4802" y2="15.5702" width="0.1524" layer="1"/>
+<wire x1="63.5" y1="13.97" x2="64.77" y2="13.97" width="0.1524" layer="1"/>
+<wire x1="61.8998" y1="15.5702" x2="63.5" y2="13.97" width="0.1524" layer="1"/>
+<wire x1="57.4802" y1="15.5702" x2="61.8998" y2="15.5702" width="0.1524" layer="1"/>
 </signal>
 <signal name="N$4">
 <contactref element="STEPDRV1" pad="13"/>
 <contactref element="IBC" pad="17"/>
-<wire x1="52.2224" y1="23.5712" x2="59.2836" y2="16.51" width="0.1524" layer="1"/>
-<wire x1="59.2836" y1="16.51" x2="64.77" y2="16.51" width="0.1524" layer="1"/>
+<wire x1="52.2224" y1="23.5712" x2="58.2168" y2="17.5768" width="0.1524" layer="1"/>
+<wire x1="58.2168" y1="17.5768" x2="60.96" y2="17.5768" width="0.1524" layer="1"/>
+<wire x1="60.96" y1="17.5768" x2="62.4332" y2="17.5768" width="0.1524" layer="1"/>
+<wire x1="62.4332" y1="17.5768" x2="63.5" y2="16.51" width="0.1524" layer="1"/>
+<wire x1="63.5" y1="16.51" x2="64.77" y2="16.51" width="0.1524" layer="1"/>
 </signal>
 <signal name="N$6">
 <contactref element="STEPDRV1" pad="12"/>
@@ -1966,27 +1965,27 @@ design rules under a new name.</description>
 </signal>
 <signal name="N$13">
 <contactref element="IBC" pad="23"/>
-<contactref element="CPU-USB-HEADER" pad="1"/>
-<wire x1="64.124540625" y1="40.132" x2="68.58" y2="39.37" width="0.1524" layer="1"/>
 <wire x1="52.2224" y1="40.132" x2="64.124540625" y2="40.132" width="0.1524" layer="1"/>
+<contactref element="CPU-USB-HEADER" pad="4"/>
+<wire x1="64.124540625" y1="40.132" x2="68.58" y2="31.75" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="N$14">
 <contactref element="IBC" pad="22"/>
-<contactref element="CPU-USB-HEADER" pad="2"/>
-<wire x1="65.30254375" y1="37.3888" x2="68.58" y2="36.83" width="0.1524" layer="1"/>
 <wire x1="52.2224" y1="37.3888" x2="65.30254375" y2="37.3888" width="0.1524" layer="1"/>
+<contactref element="CPU-USB-HEADER" pad="3"/>
+<wire x1="65.30254375" y1="37.3888" x2="68.58" y2="34.29" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="N$18">
 <contactref element="IBC" pad="21"/>
-<contactref element="CPU-USB-HEADER" pad="3"/>
-<wire x1="66.82481875" y1="34.6202" x2="68.58" y2="34.29" width="0.1524" layer="1"/>
 <wire x1="52.2224" y1="34.6202" x2="66.82481875" y2="34.6202" width="0.1524" layer="1"/>
+<contactref element="CPU-USB-HEADER" pad="2"/>
+<wire x1="66.82481875" y1="34.6202" x2="68.58" y2="36.83" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="N$30">
 <contactref element="IBC" pad="20"/>
-<contactref element="CPU-USB-HEADER" pad="4"/>
-<wire x1="68.06474375" y1="31.8516" x2="68.58" y2="31.75" width="0.1524" layer="1"/>
 <wire x1="52.2224" y1="31.8516" x2="68.06474375" y2="31.8516" width="0.1524" layer="1"/>
+<contactref element="CPU-USB-HEADER" pad="1"/>
+<wire x1="68.06474375" y1="31.8516" x2="68.58" y2="39.37" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="N$35">
 <contactref element="STEPDRV2" pad="9"/>
@@ -2105,12 +2104,13 @@ design rules under a new name.</description>
 <contactref element="MS2" pad="9"/>
 <contactref element="IBC" pad="8"/>
 <wire x1="49.3776" y1="33.2486" x2="48.0314" y2="33.2486" width="0.1524" layer="1"/>
-<wire x1="48.0314" y1="33.2486" x2="46.99" y2="34.29" width="0.1524" layer="1"/>
-<wire x1="46.99" y1="34.29" x2="41.91" y2="34.29" width="0.1524" layer="1"/>
-<wire x1="41.91" y1="34.29" x2="38.1" y2="30.48" width="0.1524" layer="1"/>
-<wire x1="38.1" y1="30.48" x2="25.4" y2="30.48" width="0.1524" layer="1"/>
+<wire x1="48.0314" y1="33.2486" x2="45.72" y2="35.56" width="0.1524" layer="1"/>
+<wire x1="36.83" y1="30.48" x2="25.4" y2="30.48" width="0.1524" layer="1"/>
 <wire x1="25.4" y1="30.48" x2="25.4" y2="55.88" width="0.1524" layer="1"/>
 <wire x1="25.4" y1="55.88" x2="35.56" y2="55.88" width="0.1524" layer="1"/>
+<wire x1="36.83" y1="30.48" x2="43.18" y2="36.83" width="0.1524" layer="1"/>
+<wire x1="43.18" y1="36.83" x2="44.45" y2="36.83" width="0.1524" layer="1"/>
+<wire x1="44.45" y1="36.83" x2="45.72" y2="35.56" width="0.1524" layer="1"/>
 </signal>
 <signal name="N$11">
 <contactref element="U1" pad="SCL"/>
@@ -2130,6 +2130,16 @@ design rules under a new name.</description>
 <wire x1="13.97" y1="27.94" x2="13.97" y2="21.59" width="0.1524" layer="1"/>
 <wire x1="13.97" y1="21.59" x2="17.78" y2="21.59" width="0.1524" layer="1"/>
 <wire x1="17.78" y1="71.12" x2="17.78" y2="31.75" width="0.1524" layer="1"/>
+</signal>
+<signal name="N$21">
+<contactref element="IBC" pad="6"/>
+<contactref element="STEPDRV2" pad="16"/>
+<contactref element="C2" pad="1"/>
+<wire x1="41.91" y1="31.75" x2="40.64" y2="30.48" width="0.1524" layer="1"/>
+<wire x1="40.64" y1="30.48" x2="40.64" y2="25.4" width="0.1524" layer="1"/>
+<wire x1="45.5676" y1="31.5214" x2="43.18" y2="31.75" width="0.1524" layer="1"/>
+<wire x1="43.18" y1="31.75" x2="41.91" y2="31.75" width="0.1524" layer="1"/>
+<wire x1="49.3776" y1="27.7114" x2="45.5676" y2="31.5214" width="0.1524" layer="1"/>
 </signal>
 </signals>
 <mfgpreviewcolors>
