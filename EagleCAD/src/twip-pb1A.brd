@@ -2213,13 +2213,11 @@ design rules under a new name.</description>
 <contactref element="X1" pad="23"/>
 <contactref element="D4" pad="K"/>
 <wire x1="55.5752" y1="54.61" x2="50.4952" y2="49.53" width="0.1524" layer="1"/>
-<wire x1="83.82" y1="38.1" x2="96.52" y2="38.1" width="0.1524" layer="1"/>
 <wire x1="96.52" y1="38.1" x2="96.52" y2="34.29" width="0.1524" layer="1"/>
 <wire x1="96.52" y1="34.29" x2="77.47" y2="34.29" width="0.1524" layer="1"/>
 <wire x1="77.47" y1="34.29" x2="73.66" y2="35.56" width="0.1524" layer="1"/>
 <wire x1="39.37" y1="45.72" x2="39.37" y2="46.99" width="0.1524" layer="1"/>
 <wire x1="41.91" y1="49.53" x2="50.4952" y2="49.53" width="0.1524" layer="1"/>
-<wire x1="82.55" y1="39.37" x2="83.82" y2="38.1" width="0.1524" layer="1"/>
 <wire x1="51.308" y1="95.25" x2="95.25" y2="95.25" width="0.1524" layer="1"/>
 <wire x1="95.25" y1="95.25" x2="95.25" y2="52.07" width="0.1524" layer="1"/>
 <wire x1="51.308" y1="77.6224" x2="51.308" y2="95.25" width="0.1524" layer="1"/>
@@ -2227,8 +2225,11 @@ design rules under a new name.</description>
 <wire x1="82.55" y1="52.07" x2="77.47" y2="52.07" width="0.1524" layer="1"/>
 <wire x1="77.47" y1="52.07" x2="74.93" y2="54.61" width="0.1524" layer="1"/>
 <wire x1="74.93" y1="54.61" x2="55.5752" y2="54.61" width="0.1524" layer="1"/>
-<wire x1="82.55" y1="39.37" x2="82.55" y2="52.07" width="0.1524" layer="1"/>
+<wire x1="82.55" y1="40.64" x2="82.55" y2="52.07" width="0.1524" layer="1"/>
 <wire x1="39.37" y1="46.99" x2="41.91" y2="49.53" width="0.1524" layer="1"/>
+<wire x1="82.55" y1="40.64" x2="90.17" y2="40.64" width="0.1524" layer="1"/>
+<wire x1="90.17" y1="40.64" x2="90.17" y2="38.1" width="0.1524" layer="1"/>
+<wire x1="90.17" y1="38.1" x2="96.52" y2="38.1" width="0.1524" layer="1"/>
 </signal>
 <signal name="N$28">
 <contactref element="X1" pad="13"/>
