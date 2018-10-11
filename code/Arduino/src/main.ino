@@ -1608,6 +1608,7 @@ void setup()
         2, // Priority of the task
         NULL, // Task handle
         0); // Specify which of the two CPU cores to pin this task to
+/*
     xTaskCreatePinnedToCore(balanceRobot, // Create FreeRTOS task. This will keep the robot balanced
         "balanceRobot", // String with name of task for debug purposes
         10000, // Stack size in words.
@@ -1615,6 +1616,7 @@ void setup()
         1, // Priority of the task
         NULL, // Task handle
         1); // Specify which of the two CPU cores to pin this task to
+*/
 /*
     xTaskCreate(monitorWebsocket, // Create FreeRTOS task. This will monitor websocket activity in a parallel thread
         "monitorWebsocket", // String with name of task for debug purposes
