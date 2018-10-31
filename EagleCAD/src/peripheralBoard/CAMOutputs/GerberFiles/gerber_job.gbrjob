@@ -1,11 +1,11 @@
 {
     "Header": {
         "Comment": "All values are metric (mm)",
-        "CreationDate": "2018-10-29T20:42:33Z",
+        "CreationDate": "2018-10-31T19:38:20Z",
         "GenerationSoftware": {
             "Application": "EAGLE",
             "Vendor": "Autodesk",
-            "Version": "9.2.2"
+            "Version": "9.2.1"
         },
         "Part": "Single"
     },
@@ -13,9 +13,9 @@
         "BoardThickness": 1.57,
         "LayerNumber": 2,
         "Name": {
-            "ProjectId": "twip-pb1A"
+            "ProjectId": "twip-pb1A-mirror"
         },
-        "Owner": "Andrew Mitchell <va3wam@gmail.com>",
+        "Owner": "Doug Elliott <canoe.eh@gmail.com>",
         "Size": {
             "X": 113.97,
             "Y": 82.54
