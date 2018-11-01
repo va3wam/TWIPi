@@ -1,0 +1,1 @@
+This is part of a series of g-code jobs used to refine the settings for creating PCBs. See the detailed procedure here: TWIPi\Eagle\docConvertFlatCAMgcode.ods 
