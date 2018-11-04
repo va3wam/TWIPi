@@ -3,7 +3,7 @@
 <eagle version="9.2.2">
 <drawing>
 <settings>
-<setting alwaysvectorfont="yes"/>
+<setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
 <grid distance="50" unitdist="mil" unit="mil" style="lines" multiple="10" display="yes" altdistance="5" altunitdist="mil" altunit="mil"/>
@@ -59,7 +59,7 @@
 <layer number="99" name="SpiceOrder" color="5" fill="1" visible="no" active="no"/>
 </layers>
 <board>
-<fusionsync huburn="a.cGVyc29uYWw6dWUyZDlmNmRl" projecturn="a.cGVyc29uYWw6dWUyZDlkNTAxIzIwMTgwODE4MTQ0NTE2MDUx" f3durn="urn:adsk.wipprod:dm.lineage:0yhwyiUNTZiQcmkfIzc17A" pcbguid="0e7eb315-b537-445a-a3fe-deb230e75ce0" lastpulledtime="" lastsyncedchangeguid="575994fc-cbfa-1602-70b1-764579ea03dc"/>
+<fusionsync huburn="a.cGVyc29uYWw6dWUyZDlmNmRl" projecturn="a.cGVyc29uYWw6dWUyZDlkNTAxIzIwMTgwODE4MTQ0NTE2MDUx" f3durn="urn:adsk.wipprod:dm.lineage:0yhwyiUNTZiQcmkfIzc17A" pcbguid="0e7eb315-b537-445a-a3fe-deb230e75ce0" lastpulledtime="" lastsyncedchangeguid="4e02391e-1938-e666-ed35-ac1e4dc4cf74"/>
 <plain>
 <wire x1="97.79" y1="72.39" x2="0.33" y2="72.39" width="0" layer="20"/>
 <wire x1="0.33" y1="72.39" x2="0.33" y2="0.01" width="0" layer="20"/>
