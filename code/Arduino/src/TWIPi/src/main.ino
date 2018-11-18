@@ -461,7 +461,7 @@ void IRAM_ATTR onTimer0()
                                                                                  // step type - we default to 
                                                                                  // SINGLE
     //timer0_write(ESP.getCycleCount() + t0_count -1 ); // Prime next interrupt to go off after proper interval
-    //t0_per_sec++ ; // Count one more t0 int seen in this second
+    t0_per_sec++ ; // Count one more t0 int seen in this second
     portEXIT_CRITICAL_ISR(&timerMux); // Allow anyone else to update the variable
  
 } //onTimer0()
@@ -1927,7 +1927,9 @@ void balanceRobot(void * parameter)
             i = 0; // prepare to count up to next second
             float dtmp = angle_gyro; // temp cheat to help tune balance point
             spd("--pid_error_temp= ",pid_error_temp); spd("  angle_gyro= ",angle_gyro); spd("  dtmp= ",dtmp); spd(" start= ",start);
-            spd("  throttle_left_motor= ",throttle_left_motor); spd("  left_motor= ",left_motor); spl();        
+            spd("  throttle_left_motor= ",throttle_left_motor); spd("  left_motor= ",left_motor); spl(); 
+            spd("t0_per_sec = ", t0_per_sec);  spl();  
+            t0_per_sec = 0;   
         } //if
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////
