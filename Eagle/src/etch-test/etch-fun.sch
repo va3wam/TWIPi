@@ -303,7 +303,9 @@ W = angled&lt;p&gt;
 <variantdefs>
 </variantdefs>
 <classes>
-<class number="0" name="default" width="0" drill="0">
+<class number="0" name="default" width="0.254" drill="0">
+</class>
+<class number="1" name="test1" width="0.3048" drill="0">
 </class>
 </classes>
 <parts>
@@ -331,14 +333,21 @@ W = angled&lt;p&gt;
 <segment>
 <pinref part="SV2" gate="G$1" pin="1"/>
 <pinref part="SW2" gate="A" pin="1"/>
-<wire x1="60.96" y1="58.42" x2="40.64" y2="58.42" width="0.1524" layer="91"/>
+<wire x1="60.96" y1="58.42" x2="40.64" y2="58.42" width="0.3048" layer="91"/>
 </segment>
 </net>
 <net name="N$2" class="0">
 <segment>
 <pinref part="SW2" gate="A" pin="2"/>
 <pinref part="SV2" gate="G$1" pin="2"/>
-<wire x1="40.64" y1="60.96" x2="60.96" y2="60.96" width="0.1524" layer="91"/>
+<wire x1="40.64" y1="60.96" x2="60.96" y2="60.96" width="0.3048" layer="91"/>
+</segment>
+</net>
+<net name="N$3" class="0">
+<segment>
+<pinref part="SV2" gate="G$1" pin="3"/>
+<pinref part="SW2" gate="A" pin="3"/>
+<wire x1="60.96" y1="63.5" x2="40.64" y2="63.5" width="0.3048" layer="91"/>
 </segment>
 </net>
 </nets>
