@@ -25,9 +25,16 @@
   History
   Version YYYY-MM-DD Description
 */   
-  String my_ver = "2.1";
+  String my_ver = "2.2.1";
+//  char my_ver[] = "2.2.0"; // Semantic Versioning (https://semver.org/)
 /*
   ------- ---------- ---------------------------------------------------------------------------------------
+  2.2.1   2018-11-25 Replaced all reference to TwoWire objects I2cOne and I2CTwo with Wire and Wire1 in an
+          effort to remove hardware conflicts between timer0 and I2CTwo. This did not help. Line 1699 has 
+          been commented out and things work fine, the issue being that we have no IMU readings because the 
+          second I2C bus needs to be disbaled to allow the timer to fire. Using Timer 1 and 2 did not help.
+  2.2.0   2018-11-25 Altered setup() sequence and added mre LCD messages to track bootup. Also created 
+          handles for FreeRTOS tasks created to run in different threads so we can reference them later.
   2.1     2018-11-14 Moved LED used for remote control from the built-in LED (13) to a pin for a seperate
           LED viewable outside the robot chasis (pin 15). Comments and variable name suggesting that we use
           the onboard or built-in LED are now misleading. Also moved motor pins to be compatible with the 
@@ -87,8 +94,8 @@
 #define SCL1 22
 #define SDA2 4
 #define SCL2 5
-TwoWire I2Cone = TwoWire(0);
-TwoWire I2Ctwo = TwoWire(1);
+//TwoWire I2Cone = TwoWire(0);
+//TwoWire I2Ctwo = TwoWire(1);
 
 /***********************************************************************************************************
  Define timer0 variables and objects
@@ -99,6 +106,16 @@ hw_timer_t * timer0 = NULL; // Pointer used to configure the timer
 portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED; // Synchronize variable updates shared by ISR and main
 #define timer_cnt_up true // Used to tell timer to count up
 #define timer_cnt_down false // Used to tell timer to count down 
+volatile long cntTimer0; 
+volatile long t0_per_sec; 
+
+/***********************************************************************************************************
+ Define FreeRTOS task variables and objects
+ ***********************************************************************************************************/
+TaskHandle_t monWebSocket; // Handle for task that monitors webSockets
+TaskHandle_t monWeb; // Handle for task that monitors HTTP 
+TaskHandle_t monBalance; // Handle for task that balances robot
+long cntBalance, cntLoop;
 
 /***********************************************************************************************************
  Define PID and motor control variables and constants
@@ -159,7 +176,6 @@ float angle_gyro, angle_acc, angle, self_balance_pid_setpoint;
 float pid_error_temp, pid_i_mem, pid_setpoint, gyro_input, pid_output, pid_last_d_error;
 float pid_output_left, pid_output_right;
 float hold, hold1, hold2, hold3, hold4, hold5;
-volatile long t0_per_sec; 
 int vertical_calibration; // This is calculated and displayed if speed == 0, which puts the brakes on
 volatile float ftemp; // Temp replacement calculation to replace onestep
 long mics, loop_mics, last_millis; // Measure length of loop, and print occasionally
@@ -406,10 +422,11 @@ static const char PROGMEM INDEX_HTML[] =
 void IRAM_ATTR onTimer0() 
 {
 
-    portENTER_CRITICAL_ISR(&timerMux); // Prevent anyone else from updating the variable
+//    portENTER_CRITICAL_ISR(&timerMux); // Prevent anyone else from updating the variable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Left motor pulse calculations 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
     throttle_counter_left_motor ++; // Increase the throttle_counter_left_motor variable by 1 every time 
                                     // this routine is executed
     if(throttle_counter_left_motor > throttle_left_motor_memory) // If the number of loops is larger then the 
@@ -461,8 +478,11 @@ void IRAM_ATTR onTimer0()
                                                                                  // step type - we default to 
                                                                                  // SINGLE
     //timer0_write(ESP.getCycleCount() + t0_count -1 ); // Prime next interrupt to go off after proper interval
+*/
+    portENTER_CRITICAL_ISR(&timerMux); // Prevent anyone else from updating the variable
     t0_per_sec++ ; // Count one more t0 int seen in this second
     portEXIT_CRITICAL_ISR(&timerMux); // Allow anyone else to update the variable
+    cntTimer0++;
  
 } //onTimer0()
 
@@ -514,17 +534,20 @@ void startI2Cone()
 {
       
     LINE("[startI2Cone] Initialize I2C bus. Source code line: ", __LINE__);
-    I2Cone.begin(SDA1,SCL1,400000); // 400KHz, uppder speed limit for ESP32 I2C
+//    I2Cone.begin(SDA1,SCL1,400000); // 400KHz, uppder speed limit for ESP32 I2C
+    Wire.begin(SDA1,SCL1,400000); // 400KHz, uppder speed limit for ESP32 I2C
     uint8_t cnt=0;
     for(uint8_t i=0;i<128;i++)
     {
-        I2Cone.beginTransmission(i);
-        uint8_t ec=I2Cone.endTransmission(true);
+//        I2Cone.beginTransmission(i);
+        Wire.beginTransmission(i);
+//        uint8_t ec=I2Cone.endTransmission(true);
+        uint8_t ec=Wire.endTransmission(true);
         if(ec==0)
         {
             if(i<16)Serial.print('0');
             Serial.print(i,HEX);
-            cnt++;
+            cnt++; 
         } //if
         else Serial.print("..");
         Serial.print(' ');
@@ -535,7 +558,7 @@ void startI2Cone()
     Serial.print(cnt);
     Serial.println(" I2C Devices found.");
 
-    if(cnt=0)
+    if(cnt==0)
     {
         Serial.print("[startI2Cone] ERROR! No I2C device found on I2Cone. Expected LCD at 0x38.");
         LCD_FOUND = false;
@@ -549,22 +572,25 @@ void startI2Cone()
 } //startI2Cone()
 
 /***********************************************************************************************************
- This function starts and scans the I2Cone buse for attached devices. This code was taken from 
+ This function starts and scans the I2Ctwo bus for attached devices. This code was taken from 
  http://playground.arduino.cc/Main/I2cScanner then updated with this 
  https://github.com/espressif/arduino-esp32/issues/977 in order toi support 2 buses. 
- The LCD should be attached to I2Cone and the MPU should be attached to I2Ctwo. SCL and SDA on both buses
+ The LCD should be attached to I2Ctwo and the MPU should be attached to I2Ctwo. SCL and SDA on both buses
  should have a 2.2K or 2.4K pull up resitor (3.3VDC). 
  ***********************************************************************************************************/
 void startI2Ctwo()
 {
       
     LINE("[startI2Ctwo] Initialize I2C bus. Source code line: ", __LINE__);
-    I2Ctwo.begin(SDA2,SCL2,400000); // 400KHz, uppder speed limit for ESP32 I2C
+//    I2Ctwo.begin(SDA2,SCL2,400000); // 400KHz, uppder speed limit for ESP32 I2C
+    Wire1.begin(SDA2,SCL2,400000); // 400KHz, uppder speed limit for ESP32 I2C
     uint8_t cnt=0;
     for(uint8_t i=0;i<128;i++)
     {
-        I2Ctwo.beginTransmission(i);
-        uint8_t ec=I2Ctwo.endTransmission(true);
+//        I2Ctwo.beginTransmission(i);
+        Wire1.beginTransmission(i);
+//        uint8_t ec=I2Ctwo.endTransmission(true);
+        uint8_t ec=Wire1.endTransmission(true);
         if(ec==0)
         {
             if(i<16)Serial.print('0');
@@ -580,7 +606,7 @@ void startI2Ctwo()
     Serial.print(cnt);
     Serial.println(" I2C Devices found.");
 
-    if(cnt=0)
+    if(cnt==0)
     {
         Serial.print("[startI2Ctwo] ERROR! No I2C device found on I2Ctwo. Expected MPU at 0x68.");
         IMU_FOUND = false;
@@ -1367,28 +1393,37 @@ String ipToString(IPAddress ip)
 void initializeIMU()
 {
 
-    byte error, lowByte, highByte;
-    int address;
+    byte error, lowByte;
+//    byte highByte;
+//    int address;
     int receive_counter;
     int temp,tcnt1, tcnt2;
     String tmsg;
     LINE("[initializeIMU] Initializing the MPU6050 IMU. Source code line: ", __LINE__);
     sp("[initializeIMU]: Checking to see if the IMU is found on I2Ctwo at expected I2C address of 0x");
     spl(MPU_address,HEX);
-    I2Ctwo.beginTransmission(MPU_address);
-    error = I2Ctwo.endTransmission(true);
+//    I2Ctwo.beginTransmission(MPU_address);
+    Wire1.beginTransmission(MPU_address);
+//    error = I2Ctwo.endTransmission(true);
+    error = Wire1.endTransmission(true);
     if (error == 0)
     {
         sp("[initializeIMU] I2C device found on I2Ctwo at address 0x");
         spl(MPU_address,HEX);
         spl("[initializeIMU] The IMU MPU-6050 found at expected address");
-        I2Ctwo.beginTransmission(MPU_address);
-        I2Ctwo.write(MPU6050_WHO_AM_I);
-        I2Ctwo.endTransmission();
+//        I2Ctwo.beginTransmission(MPU_address);
+//        I2Ctwo.write(MPU6050_WHO_AM_I);
+//        I2Ctwo.endTransmission();
+        Wire1.beginTransmission(MPU_address);
+        Wire1.write(MPU6050_WHO_AM_I);
+        Wire1.endTransmission();
         spl("[initializeIMU] Send Who am I request to IMU...");
-        I2Ctwo.requestFrom(MPU_address, 1);
-        while(I2Ctwo.available() < 1); // Wait for reply from IMU slave on I2C bus                                     
-        lowByte = I2Ctwo.read();
+//        I2Ctwo.requestFrom(MPU_address, 1);
+        Wire1.requestFrom(MPU_address, 1);
+//        while(I2Ctwo.available() < 1); // Wait for reply from IMU slave on I2C bus                                     
+//        lowByte = I2Ctwo.read();
+        while(Wire1.available() < 1); // Wait for reply from IMU slave on I2C bus                                     
+        lowByte = Wire1.read();
         if(lowByte == MPU_address)
         {    
             sp("[initializeIMU] Who Am I responce is ok: 0x");
@@ -1416,22 +1451,36 @@ void initializeIMU()
                     tmsg = "[initializeIMU] Gyro calc countdown: " + String(tcnt2);
                     spl(tmsg);              
                 } //if
-                I2Ctwo.beginTransmission(MPU_address); // Start communication with the gyro
-                I2Ctwo.write(0x45); // Start reading the GYRO Y and Z registers
-                I2Ctwo.endTransmission(); // End the transmission
-                I2Ctwo.requestFrom(MPU_address, 4); // Request 2 bytes from the gyro
-                temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes to make one integer, that could be negative
+//                I2Ctwo.beginTransmission(MPU_address); // Start communication with the gyro
+//                I2Ctwo.write(0x45); // Start reading the GYRO Y and Z registers
+//                I2Ctwo.endTransmission(); // End the transmission
+//                I2Ctwo.requestFrom(MPU_address, 4); // Request 2 bytes from the gyro
+//                temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes to make one integer, that could be negative
+
+                Wire1.beginTransmission(MPU_address); // Start communication with the gyro
+                Wire1.write(0x45); // Start reading the GYRO Y and Z registers
+                Wire1.endTransmission(); // End the transmission
+                Wire1.requestFrom(MPU_address, 4); // Request 2 bytes from the gyro
+                temp = Wire1.read()<<8|Wire1.read(); // Combine the two bytes to make one integer, that could be negative
                 if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
                 gyro_pitch_calibration_value += temp; // 16 bit Y value from gyro, accumulating in 32 bit variable, sign extended
-                temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes to make one integer, that could be negative
+//                temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes to make one integer, that could be negative
+                temp = Wire1.read()<<8|Wire1.read(); // Combine the two bytes to make one integer, that could be negative
                 if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
                 gyro_yaw_calibration_value += temp; // 16 bit Z value from gyro, accumulating in 32 bit variable, sign extended
                 delay(20);
-                I2Ctwo.beginTransmission(MPU_address); // Start communication with the IMU
-                I2Ctwo.write(0x3F); // Get the MPU6050_ACCEL_ZOUT_H value
-                I2Ctwo.endTransmission(); // End the transmission with the gyro
-                I2Ctwo.requestFrom(MPU_address,2);
-                temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Read the 16 bit number from IMU
+
+//                I2Ctwo.beginTransmission(MPU_address); // Start communication with the IMU
+//                I2Ctwo.write(0x3F); // Get the MPU6050_ACCEL_ZOUT_H value
+//                I2Ctwo.endTransmission(); // End the transmission with the gyro
+//                I2Ctwo.requestFrom(MPU_address,2);
+//                temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Read the 16 bit number from IMU
+                Wire1.beginTransmission(MPU_address); // Start communication with the IMU
+                Wire1.write(0x3F); // Get the MPU6050_ACCEL_ZOUT_H value
+                Wire1.endTransmission(); // End the transmission with the gyro
+                Wire1.requestFrom(MPU_address,2);
+                temp = Wire1.read()<<8|Wire1.read(); // Read the 16 bit number from IMU
+
                 if(temp > 32767) temp = temp - 65536; // If it's really a negative number, fix it
                 balance_calibration_value += temp; // 16 bit Z value from accelerometer, accumulating in 32 bit variable, sign extended
                 delay(20);           
@@ -1486,6 +1535,7 @@ void set_gyro_registers()
 
     LINE("[set_gyro_registers] Configure the MPU6050. Source code line: ", __LINE__);
     spl("[set_gyro_registers] Wake up MPU"); // By default the MPU-6050 sleeps. So we have to wake it up.
+/*
     I2Ctwo.beginTransmission(MPU_address); // Start communication with the address found during search.
     I2Ctwo.write(0x6B); // We want to write to the PWR_MGMT_1 register (6B hex)
     I2Ctwo.write(0x00); // Set the register bits as 00000000 to activate the gyro
@@ -1512,6 +1562,34 @@ void set_gyro_registers()
     I2Ctwo.write(0x03); // Set the register bits as 00000011 (Set Digital Low Pass 
                       // Filter to ~43Hz)
     I2Ctwo.endTransmission(); // End the transmission with the gyro 
+*/
+
+    Wire1.beginTransmission(MPU_address); // Start communication with the address found during search.
+    Wire1.write(0x6B); // We want to write to the PWR_MGMT_1 register (6B hex)
+    Wire1.write(0x00); // Set the register bits as 00000000 to activate the gyro
+    Wire1.endTransmission(); // End the transmission with the gyro.
+
+    // Set the full scale of the gyro to +/- 250 degrees per second
+    spl("[set_gyro_registers] Set the full scale of the gyro to +/- 250 degrees per second");
+    Wire1.beginTransmission(MPU_address); // Start communication with the address found during search.
+    Wire1.write(0x1B); // We want to write to the GYRO_CONFIG register (1B hex)
+    Wire1.write(0x00); // Set the register bits as 00000000 (250dps full scale)
+    Wire1.endTransmission(); // End the transmission with the gyro
+        
+    // Set the full scale of the accelerometer to +/- 4g.
+    spl("[set_gyro_registers] Set the full scale of the accelerometer to +/- 4g");
+    Wire1.beginTransmission(MPU_address); // Start communication with the address found during search.
+    Wire1.write(0x1C); // We want to write to the ACCEL_CONFIG register (1A hex)
+    Wire1.write(0x08); // Set the register bits as 00001000 (+/- 4g full scale range)
+    Wire1.endTransmission(); // End the transmission with the gyro
+
+    // Set some filtering to improve the raw data.
+    spl("[set_gyro_registers] Set Set Digital Low Pass Filter to ~43Hz to improve the raw data");
+    Wire1.beginTransmission(MPU_address); // Start communication with the address found during search
+    Wire1.write(0x1A); // We want to write to the CONFIG register (1A hex)
+    Wire1.write(0x03); // Set the register bits as 00000011 (Set Digital Low Pass 
+                      // Filter to ~43Hz)
+    Wire1.endTransmission(); // End the transmission with the gyro 
 
 } //set_gyro_registers
 
@@ -1523,6 +1601,7 @@ void read_mpu_6050_data()
 {
 
     LINE("[read_mpu_6050_data] Read MPU6050 registers. Source code line: ", __LINE__);
+/*
     I2Ctwo.beginTransmission(MPU_address); // Start communicating with the MPU-6050
     I2Ctwo.write(0x3B); // Send the requested starting register
     I2Ctwo.endTransmission(); // End the transmission
@@ -1542,6 +1621,26 @@ void read_mpu_6050_data()
     if(gyro_y > 32767) gyro_y = gyro_y - 65536; // if it's really a negative number, fix it
     gyro_z = I2Ctwo.read()<<8|I2Ctwo.read(); // Add the low and high byte to the gyro_z variable
     if(gyro_z > 32767) gyro_z = gyro_z - 65536; // if it's really a negative number, fix it
+*/
+    Wire1.beginTransmission(MPU_address); // Start communicating with the MPU-6050
+    Wire1.write(0x3B); // Send the requested starting register
+    Wire1.endTransmission(); // End the transmission
+    Wire1.requestFrom(MPU_address,14); // Request 14 bytes from the MPU-6050
+    while(Wire1.available() < 14); // Wait until all the bytes are received
+    acc_x = Wire1.read()<<8|Wire1.read(); // Add the low and high byte to the acc_x variable
+    if(acc_x > 32767) acc_x = acc_x - 65536; // if it's really a negative number, fix it
+    acc_y = Wire1.read()<<8|Wire1.read(); // Add the low and high byte to the acc_y variable
+    if(acc_y > 32767) acc_y = acc_y - 65536; // if it's really a negative number, fix it
+    acc_z = Wire1.read()<<8|Wire1.read(); // Add the low and high byte to the acc_z variable
+    if(acc_z > 32767) acc_z = acc_z - 65536; // if it's really a negative number, fix it
+    temperature = Wire1.read()<<8|Wire1.read(); // Add the low and high byte to the temperature variable
+    if(temperature > 32767) temperature = temperature - 65536; // if it's really a negative number, fix it
+    gyro_x = Wire1.read()<<8|Wire1.read(); // Add the low and high byte to the gyro_x variable
+    if(gyro_x > 32767) gyro_x = gyro_x - 65536; // if it's really a negative number, fix it
+    gyro_y = Wire1.read()<<8|Wire1.read(); // Add the low and high byte to the gyro_y variable
+    if(gyro_y > 32767) gyro_y = gyro_y - 65536; // if it's really a negative number, fix it
+    gyro_z = Wire1.read()<<8|Wire1.read(); // Add the low and high byte to the gyro_z variable
+    if(gyro_z > 32767) gyro_z = gyro_z - 65536; // if it's really a negative number, fix it
 
 } //read_mpu_6050_data()
 
@@ -1554,8 +1653,9 @@ void startTimer0()
     LINE("[startTimer0] Initialize and start timer0. Source code line: ", __LINE__);
     timer0 = timerBegin(timer_number_0, timer_prescaler_0, timer_cnt_up); // Pointer to hardware timer 0
     timerAttachInterrupt(timer0, &onTimer0, true); // Bind onTimer function to hardware timer 0
-    timerAlarmWrite(timer0, 1000000, true); // Interrupt generated is of edge type not level (third arg) at 
+    timerAlarmWrite(timer0, 20, true); // Interrupt generated is of edge type not level (third arg) at 
                                             // count of 1000000 (second argument)
+    yield();  //This yield was mentioned as a way to fix uissues starting timer multiple times                                        
     timerAlarmEnable(timer0); // Enable hardware timer 0
 
 } //startISR()
@@ -1591,7 +1691,7 @@ void setup()
     pinMode(LED_BUILTIN, OUTPUT); // Take control on onbaord LED
     writeLED(false); // Turn onboard LED off
     display_Running_Sketch(); // Show environment details in console
-    Serial.setDebugOutput(true); // http://esp8266.github.io/Arduino/versions/2.0.0/doc/reference.html
+//    Serial.setDebugOutput(true); // http://esp8266.github.io/Arduino/versions/2.0.0/doc/reference.html
     for(uint8_t t = 4; t > 0; t--) // Allow time for ESP32 serial to initialize 
     {
         spf("[setup] Boot wait %d...\r\n", t); // Count down message to console
@@ -1599,19 +1699,15 @@ void setup()
         delay(1000); // Allow time to pass
     } //for   
     startI2Cone(); // Scan the first I2C bus for LCD
-    startI2Ctwo(); // Scan the second I2C bus for MPU
-    spl("[setup] Initialize IMU");
-    initializeIMU();
-    /*
-    xTaskCreate(initializeIMU, // Create FreeRTOS task. This will get the IMU going in a parallel thread
-        "InitIMU", // String with name of task for debug purposes
-        10000, // Stack size in words
-        NULL, // Parameter passed as input of the task
-        2, // Priority of the task
-        NULL); // Task handle
-    */
+//    startI2Ctwo(); // Scan the second I2C bus for MPU   AM: This is the issue
+
     initializeLCD(); // Initialize the Open Smart 1602 LCD Display
     sendLCD("Boot Sequence",LINE1); // Boot message to LCD line 1
+//    spl("[setup] Initialize IMU");
+//    sendLCD("Init IMU",LINE2); // Send more boot message to LCD line 2
+//    initializeIMU();
+    sendLCD("Init Motors",LINE2); // Send more boot message to LCD line 2
+    initializeMotorControllers(); // Initialize the motor controllers
     sendLCD("Start WiFi",LINE2); // Starting WiFi message to LCD line 2
     startWiFi(); // Start WiFi and connect to AP
     startDNS(); // Start domain name service
@@ -1619,51 +1715,32 @@ void setup()
     startWebServer(); // Start web service 
     sendLCD("Start Websockets",LINE2); // Starting Websockets message to LCD line 2
     startWebsocket(); // Include libaries in Websockets.h missing. Need to fix this.
- /*
-    if(imuReady == false)
-    {
-        spl("[setup] Waiting for IMU init to complete");
-        sendLCD("Waiting for IMU",LINE2); // Starting IMU message to LCD line 2
-        while(imuReady == false); // Wait for IMU initialization to complete (done in seperate FreeRTOS thread)
-    } //if
-*/
+    sendLCD("Monitor Socket",LINE2); // Send more boot message to LCD line 2
     xTaskCreatePinnedToCore(monitorWebsocket, // Create FreeRTOS task. This will monitor websocket activity in a parallel thread
         "monitorWebsocket", // String with name of task for debug purposes
         10000, // Stack size in words. Tried lower number but causes reboots
         NULL, // Parameter passed as input of the task
         2, // Priority of the task
-        NULL, // Task handle
+        &monWebSocket, // Task handle
         0); // Specify which of the two CPU cores to pin this task to
+    sendLCD("Monitor Web",LINE2); // Send more boot message to LCD line 2
     xTaskCreatePinnedToCore(monitorWeb, // Create FreeRTOS task. This will monitor web activity in a parallel thread
         "monitorWeb", // String with name of task for debug purposes
         10000, // Stack size in words. Tried lower number but causes reboots
         NULL, // Parameter passed as input of the task
         2, // Priority of the task
-        NULL, // Task handle
+        &monWeb, // Task handle
         0); // Specify which of the two CPU cores to pin this task to
+    sendLCD("Balance Task",LINE2); // Send more boot message to LCD line 2
+/*
     xTaskCreatePinnedToCore(balanceRobot, // Create FreeRTOS task. This will keep the robot balanced
         "balanceRobot", // String with name of task for debug purposes
         10000, // Stack size in words.
         NULL, // Parameter passed as input of the task
-        1, // Priority of the task
-        NULL, // Task handle
+        9, // Priority of the task
+        &monBalance, // Task handle
         1); // Specify which of the two CPU cores to pin this task to
-/*
-    xTaskCreate(monitorWebsocket, // Create FreeRTOS task. This will monitor websocket activity in a parallel thread
-        "monitorWebsocket", // String with name of task for debug purposes
-        10000, // Stack size in words. Tried lower number but causes reboots
-        NULL, // Parameter passed as input of the task
-        2, // Priority of the task
-        NULL); // Task handle
-    xTaskCreate(monitorWeb, // Create FreeRTOS task. This will monitor web activity in a parallel thread
-        "monitorWeb", // String with name of task for debug purposes
-        10000, // Stack size in words. Tried lower number but causes reboots
-        NULL, // Parameter passed as input of the task
-        2, // Priority of the task
-        NULL); // Task handle
 */
-    sendLCD("Init Motors",LINE2); // Send more boot message to LCD line 2
-    initializeMotorControllers(); // Initialize the motor controllers
     sendLCD(ipToString(WiFi.localIP()),LINE1); // Send IP address to LCD line 1
     sendLCD("Version: " + my_ver,LINE2); // Send version of code to LCD line 2
     startTimer0();
@@ -1710,11 +1787,12 @@ void monitorWeb(void * parameter)
  This function balances the robot. It runs as its own FreeRTOS task. Variables and objects used in here need 
  to be declared volitile in order to be accessible by the main FreeRTOS task.
  ***********************************************************************************************************/
-void balanceRobot(void * parameter)
+//void balanceRobot(void * parameter)
+void balanceRobot()
 {
 
-    while(1)
-    {
+   //while(1)
+   //{
 
         int temp; // Interim placeholder variable
         //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1736,11 +1814,19 @@ void balanceRobot(void * parameter)
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         // angle calculations   
         //////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
         I2Ctwo.beginTransmission(MPU_address); // Start communication with the gyro
         I2Ctwo.write(0x3F); // Start reading at register 3F (ACCEL_ZOUT_H)
         I2Ctwo.endTransmission(); // End the transmission
         I2Ctwo.requestFrom(MPU_address, 2); // Request 2 bytes from the gyro
         temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes to make one integer
+*/
+        Wire1.beginTransmission(MPU_address); // Start communication with the gyro
+        Wire1.write(0x3F); // Start reading at register 3F (ACCEL_ZOUT_H)
+        Wire1.endTransmission(); // End the transmission
+        Wire1.requestFrom(MPU_address, 2); // Request 2 bytes from the gyro
+        temp = Wire1.read()<<8|Wire1.read(); // Combine the two bytes to make one integer
+
         if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
         accelerometer_data_raw = temp;
         accelerometer_data_raw += acc_calibration_value; // Add the accelerometer calibration value
@@ -1755,6 +1841,7 @@ void balanceRobot(void * parameter)
             angle_gyro = angle_acc; // Load the accelerometer angle in the angle_gyro variable
             start = 1;                             // Set the start variable to start the PID controller
         } //if
+/*
         I2Ctwo.beginTransmission(MPU_address); // Start communication with the gyro
         I2Ctwo.write(0x43); // Start reading at register 43
         I2Ctwo.endTransmission(); // End the transmission
@@ -1763,6 +1850,15 @@ void balanceRobot(void * parameter)
         if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
         gyro_yaw_data_raw = temp; // and use result as raw data, which is yaw degrees/sec * 65.5
         temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes read to make one 16 bit signed integer
+*/
+        Wire1.beginTransmission(MPU_address); // Start communication with the gyro
+        Wire1.write(0x43); // Start reading at register 43
+        Wire1.endTransmission(); // End the transmission
+        Wire1.requestFrom(MPU_address, 4); // Request 4 bytes from the gyro
+        temp = Wire1.read()<<8|Wire1.read(); // Combine the two bytes read to make one 16 bit signed integer
+        if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
+        gyro_yaw_data_raw = temp; // and use result as raw data, which is yaw degrees/sec * 65.5
+        temp = Wire1.read()<<8|Wire1.read(); // Combine the two bytes read to make one 16 bit signed integer
         if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
         gyro_pitch_data_raw = temp; // and use result as raw data, which is pitch degrees/sec * 65.5
         gyro_pitch_data_raw -= gyro_pitch_calibration_value; // Add the gyro calibration value
@@ -1929,7 +2025,9 @@ void balanceRobot(void * parameter)
             spd("--pid_error_temp= ",pid_error_temp); spd("  angle_gyro= ",angle_gyro); spd("  dtmp= ",dtmp); spd(" start= ",start);
             spd("  throttle_left_motor= ",throttle_left_motor); spd("  left_motor= ",left_motor); spl(); 
             spd("t0_per_sec = ", t0_per_sec);  spl();  
-            t0_per_sec = 0;   
+            noInterrupts(); // ensure interrupt can't happen when updating ISR varaible
+            t0_per_sec = 0;  
+            interrupts(); // Re-enable interrupts
         } //if
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1949,8 +2047,9 @@ void balanceRobot(void * parameter)
         {
             while(loop_timer > micros()) {}; // spin in this while until micros() catches up with loop_timer
         } //if                               // no spin time needed if we're already past old target loop end
-        loop_timer = micros() + 4000;        // time next target loop end time is 4 msec from now.    
-    } //while    
+        loop_timer = micros() + 4000;        // time next target loop end time is 4 msec from now.  
+        cntBalance++;  
+  // } //while    
 
 } //balanceRobot()
 
@@ -1959,5 +2058,15 @@ void balanceRobot(void * parameter)
  ***********************************************************************************************************/
 void loop() 
 {
+    cntLoop++;
 
+    //balanceRobot();
+    Serial.print("t0_per_sec = ");
+    Serial.print(t0_per_sec);
+    Serial.print(" cntTimer0 = ");
+    Serial.print(cntTimer0);
+    Serial.print(" cntBalance = ");
+    Serial.print(cntBalance);
+    Serial.print(" cntLoop = ");
+    Serial.println(cntLoop);
 } //loop()
