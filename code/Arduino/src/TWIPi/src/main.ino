@@ -12,6 +12,12 @@
   Synopsis:
   This is the main sketch for the TWIPi robot. 
 
+  NOTE!!! /Users/andrewmitchell/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-i2c.c
+  has custom lines in it that differ from the ESP-IDF stable release. Make sure that these lines are 
+  maintained when updating to the latest PlatformIO ESP-IDF files. Failure to do so will result in unrelaible
+  I2C and hardware timer behavior. See the clsojng comments for issue https://github.com/va3wam/TWIPi/issues/14
+  for full details.
+
   Environment:
   - Platform: Espressif 32 (https://www.espressif.com/en/products/hardware/esp32/overview)
   - Framework: Arduino 
@@ -26,13 +32,13 @@
   Version YYYY-MM-DD Description
 */   
   String my_ver = "2.2.1";
-//  char my_ver[] = "2.2.0"; // Semantic Versioning (https://semver.org/)
+//  char my_ver[] = "2.2.1"; // Semantic Versioning (https://semver.org/)
 /*
   ------- ---------- ---------------------------------------------------------------------------------------
   2.2.1   2018-11-25 Replaced all reference to TwoWire objects I2cOne and I2CTwo with Wire and Wire1 in an
-          effort to remove hardware conflicts between timer0 and I2CTwo. This did not help. Line 1699 has 
-          been commented out and things work fine, the issue being that we have no IMU readings because the 
-          second I2C bus needs to be disbaled to allow the timer to fire. Using Timer 1 and 2 did not help.
+          effort to remove hardware conflicts between timer0 and I2CTwo. This did not help. In the end the
+          issues turned out to be a problem with the PlatformIO esp32-hal-i2c.c file. See issue Inconsistent 
+          variable behavior #14 in our TWIPi repositories (https://github.com/va3wam/TWIPi/issues/14).
   2.2.0   2018-11-25 Altered setup() sequence and added mre LCD messages to track bootup. Also created 
           handles for FreeRTOS tasks created to run in different threads so we can reference them later.
   2.1     2018-11-14 Moved LED used for remote control from the built-in LED (13) to a pin for a seperate
@@ -1699,13 +1705,12 @@ void setup()
         delay(1000); // Allow time to pass
     } //for   
     startI2Cone(); // Scan the first I2C bus for LCD
-//    startI2Ctwo(); // Scan the second I2C bus for MPU   AM: This is the issue
-
+    startI2Ctwo(); // Scan the second I2C bus for MPU   AM: This is the issue
     initializeLCD(); // Initialize the Open Smart 1602 LCD Display
     sendLCD("Boot Sequence",LINE1); // Boot message to LCD line 1
-//    spl("[setup] Initialize IMU");
-//    sendLCD("Init IMU",LINE2); // Send more boot message to LCD line 2
-//    initializeIMU();
+    spl("[setup] Initialize IMU");
+    sendLCD("Init IMU",LINE2); // Send more boot message to LCD line 2
+    initializeIMU();
     sendLCD("Init Motors",LINE2); // Send more boot message to LCD line 2
     initializeMotorControllers(); // Initialize the motor controllers
     sendLCD("Start WiFi",LINE2); // Starting WiFi message to LCD line 2
@@ -2060,7 +2065,8 @@ void loop()
 {
     cntLoop++;
 
-    //balanceRobot();
+    balanceRobot();
+/*
     Serial.print("t0_per_sec = ");
     Serial.print(t0_per_sec);
     Serial.print(" cntTimer0 = ");
@@ -2069,4 +2075,5 @@ void loop()
     Serial.print(cntBalance);
     Serial.print(" cntLoop = ");
     Serial.println(cntLoop);
+*/
 } //loop()
