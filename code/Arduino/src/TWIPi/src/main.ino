@@ -31,10 +31,14 @@
   History
   Version YYYY-MM-DD Description
 */   
-  String my_ver = "2.2.1";
+  String my_ver = "2.2.2";
 //  char my_ver[] = "2.2.1"; // Semantic Versioning (https://semver.org/)
 /*
   ------- ---------- ---------------------------------------------------------------------------------------
+  2.2.2   2018-11-28 Changed reference to Gyro and accelerometer sensors to jive with the new IMU 
+          orientation inside the robot's chasis. X (roll) has become Y (pitch), Y (pitch) has become Z (Yaw).
+          Also had to reverse the front and back motor rotation value to align with orientaiton of the motors 
+          and IMU in the new chasis.  
   2.2.1   2018-11-25 Replaced all reference to TwoWire objects I2cOne and I2CTwo with Wire and Wire1 in an
           effort to remove hardware conflicts between timer0 and I2CTwo. This did not help. In the end the
           issues turned out to be a problem with the PlatformIO esp32-hal-i2c.c file. See issue Inconsistent 
@@ -175,8 +179,8 @@ volatile int left_motor, throttle_left_motor, throttle_counter_left_motor, throt
 volatile int right_motor, throttle_right_motor, throttle_counter_right_motor, throttle_right_motor_memory;
 int battery_voltage;
 int receive_counter;
-int gyro_pitch_data_raw, gyro_yaw_data_raw, accelerometer_data_raw;
-long gyro_yaw_calibration_value, gyro_pitch_calibration_value, balance_calibration_value;
+int gyro_pitch_data_raw, gyro_yaw_data_raw, gyro_roll_data_raw, accelerometer_data_raw;
+long gyro_yaw_calibration_value, gyro_pitch_calibration_value, balance_calibration_value, gyro_roll_calibration_value;
 unsigned long loop_timer;
 float angle_gyro, angle_acc, angle, self_balance_pid_setpoint;
 float pid_error_temp, pid_i_mem, pid_setpoint, gyro_input, pid_output, pid_last_d_error;
@@ -428,11 +432,11 @@ static const char PROGMEM INDEX_HTML[] =
 void IRAM_ATTR onTimer0() 
 {
 
-//    portENTER_CRITICAL_ISR(&timerMux); // Prevent anyone else from updating the variable
+    portENTER_CRITICAL_ISR(&timerMux); // Prevent anyone else from updating the variable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Left motor pulse calculations 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
+
     throttle_counter_left_motor ++; // Increase the throttle_counter_left_motor variable by 1 every time 
                                     // this routine is executed
     if(throttle_counter_left_motor > throttle_left_motor_memory) // If the number of loops is larger then the 
@@ -484,8 +488,8 @@ void IRAM_ATTR onTimer0()
                                                                                  // step type - we default to 
                                                                                  // SINGLE
     //timer0_write(ESP.getCycleCount() + t0_count -1 ); // Prime next interrupt to go off after proper interval
-*/
-    portENTER_CRITICAL_ISR(&timerMux); // Prevent anyone else from updating the variable
+
+//    portENTER_CRITICAL_ISR(&timerMux); // Prevent anyone else from updating the variable
     t0_per_sec++ ; // Count one more t0 int seen in this second
     portEXIT_CRITICAL_ISR(&timerMux); // Allow anyone else to update the variable
     cntTimer0++;
@@ -1464,16 +1468,19 @@ void initializeIMU()
 //                temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes to make one integer, that could be negative
 
                 Wire1.beginTransmission(MPU_address); // Start communication with the gyro
-                Wire1.write(0x45); // Start reading the GYRO Y and Z registers
+//                Wire1.write(0x45); // Start reading the GYRO Y and Z registers
+                Wire1.write(0x43); // Start reading the GYRO X and Y registers
                 Wire1.endTransmission(); // End the transmission
                 Wire1.requestFrom(MPU_address, 4); // Request 2 bytes from the gyro
                 temp = Wire1.read()<<8|Wire1.read(); // Combine the two bytes to make one integer, that could be negative
                 if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
-                gyro_pitch_calibration_value += temp; // 16 bit Y value from gyro, accumulating in 32 bit variable, sign extended
+//                gyro_pitch_calibration_value += temp; // 16 bit Y value from gyro, accumulating in 32 bit variable, sign extended
+                gyro_roll_calibration_value += temp; // 16 bit Y value from gyro, accumulating in 32 bit variable, sign extended
 //                temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes to make one integer, that could be negative
                 temp = Wire1.read()<<8|Wire1.read(); // Combine the two bytes to make one integer, that could be negative
                 if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
-                gyro_yaw_calibration_value += temp; // 16 bit Z value from gyro, accumulating in 32 bit variable, sign extended
+//                gyro_yaw_calibration_value += temp; // 16 bit Z value from gyro, accumulating in 32 bit variable, sign extended
+                gyro_pitch_calibration_value += temp; // 16 bit Z value from gyro, accumulating in 32 bit variable, sign extended
                 delay(20);
 
 //                I2Ctwo.beginTransmission(MPU_address); // Start communication with the IMU
@@ -1482,7 +1489,8 @@ void initializeIMU()
 //                I2Ctwo.requestFrom(MPU_address,2);
 //                temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Read the 16 bit number from IMU
                 Wire1.beginTransmission(MPU_address); // Start communication with the IMU
-                Wire1.write(0x3F); // Get the MPU6050_ACCEL_ZOUT_H value
+//                Wire1.write(0x3F); // Get the MPU6050_ACCEL_ZOUT_H value
+                Wire1.write(0x3D); // Get the MPU6050_ACCEL_ZOUT_H value
                 Wire1.endTransmission(); // End the transmission with the gyro
                 Wire1.requestFrom(MPU_address,2);
                 temp = Wire1.read()<<8|Wire1.read(); // Read the 16 bit number from IMU
@@ -1491,8 +1499,8 @@ void initializeIMU()
                 balance_calibration_value += temp; // 16 bit Z value from accelerometer, accumulating in 32 bit variable, sign extended
                 delay(20);           
             } //for   
-            if(gyro_pitch_calibration_value == -500 && 
-                gyro_yaw_calibration_value == -500) // If calibration numbers are characteristically weird
+            if(gyro_roll_calibration_value == -500 && 
+                gyro_pitch_calibration_value == -500) // If calibration numbers are characteristically weird
             {
                 while( 1==1) // request an IMU reset, because it's not working
                 {
@@ -1500,13 +1508,13 @@ void initializeIMU()
                     delay(3000);
                 } //while
             } //if
-            gyro_pitch_calibration_value /= 500; // Divide the total value by 500 to get the avarage gyro pitch offset
-            gyro_yaw_calibration_value /= 500; // Divide the total value by 500 to get the avarage gyro yaw offset
-            balance_calibration_value /=500; // Divide the total value by 500 to get the avarage balance value (Z accelerometer)
+            gyro_roll_calibration_value /= 500; // Divide the total value by 500 to get the avarage gyro pitch offset
+            gyro_pitch_calibration_value /= 500; // Divide the total value by 500 to get the avarage gyro yaw offset
+            balance_calibration_value /=500; // Divide the total value by 500 to get the avarage balance value (Z accelerometer)            
             sp("[initializeIMU] gyro_pitch_calibration_value= "); 
             spl(gyro_pitch_calibration_value);
-            sp("[initializeIMU] gyro_yaw_calibration_value= "); 
-            spl(gyro_yaw_calibration_value);
+            sp("[initializeIMU] gyro_roll_calibration_value= "); 
+            spl(gyro_roll_calibration_value);
             sp("[initializeIMU] speed override value= "); spl(speed);    
             sp("[initializeIMU]: Balance value. NOTE - this is the balance value only if the robot is standing upright: ");
             spl(balance_calibration_value);
@@ -1827,7 +1835,8 @@ void balanceRobot()
         temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes to make one integer
 */
         Wire1.beginTransmission(MPU_address); // Start communication with the gyro
-        Wire1.write(0x3F); // Start reading at register 3F (ACCEL_ZOUT_H)
+//        Wire1.write(0x3F); // Start reading at register 3F (ACCEL_ZOUT_H)
+        Wire1.write(0x3D); // Start reading at register 3D (ACCEL_YOUT_H)
         Wire1.endTransmission(); // End the transmission
         Wire1.requestFrom(MPU_address, 2); // Request 2 bytes from the gyro
         temp = Wire1.read()<<8|Wire1.read(); // Combine the two bytes to make one integer
@@ -1857,17 +1866,23 @@ void balanceRobot()
         temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes read to make one 16 bit signed integer
 */
         Wire1.beginTransmission(MPU_address); // Start communication with the gyro
-        Wire1.write(0x43); // Start reading at register 43
+//        Wire1.write(0x43); // Start reading at register 43
+        Wire1.write(0x45); // Start reading at register 45
         Wire1.endTransmission(); // End the transmission
         Wire1.requestFrom(MPU_address, 4); // Request 4 bytes from the gyro
         temp = Wire1.read()<<8|Wire1.read(); // Combine the two bytes read to make one 16 bit signed integer
         if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
-        gyro_yaw_data_raw = temp; // and use result as raw data, which is yaw degrees/sec * 65.5
+//        gyro_yaw_data_raw = temp; // and use result as raw data, which is yaw degrees/sec * 65.5
+        gyro_pitch_data_raw = temp; // and use result as raw data, which is pitch degrees/sec * 65.5
         temp = Wire1.read()<<8|Wire1.read(); // Combine the two bytes read to make one 16 bit signed integer
         if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
-        gyro_pitch_data_raw = temp; // and use result as raw data, which is pitch degrees/sec * 65.5
-        gyro_pitch_data_raw -= gyro_pitch_calibration_value; // Add the gyro calibration value
-        angle_gyro += gyro_pitch_data_raw * 0.000030534; // Calculate the traveled during this loop angle 
+//        gyro_pitch_data_raw = temp; // and use result as raw data, which is pitch degrees/sec * 65.5
+//        gyro_pitch_data_raw -= gyro_pitch_calibration_value; // Add the gyro calibration value
+//        angle_gyro += gyro_pitch_data_raw * 0.000030534; // Calculate the traveled during this loop angle 
+                                                        // and add this to the angle_gyro variable
+        gyro_roll_data_raw = temp; // and use result as raw data, which is pitch degrees/sec * 65.5
+        gyro_roll_data_raw -= gyro_roll_calibration_value; // Add the gyro calibration value
+        angle_gyro += gyro_roll_data_raw * 0.000030534; // Calculate the traveled during this loop angle 
                                                         // and add this to the angle_gyro variable
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         // MPU-6050 offset compensation. Not every gyro is mounted 100% level with the axis of the robot. This 
@@ -1876,10 +1891,12 @@ void balanceRobot()
         // for this behavior a VERY SMALL angle compensation is needed when the robot is rotating. Try  
         // 0.0000003 or -0.0000003 first to see if there is any improvement.
         //////////////////////////////////////////////////////////////////////////////////////////////////////
-        gyro_yaw_data_raw -= gyro_yaw_calibration_value; // Add the gyro calibration value
+//        gyro_yaw_data_raw -= gyro_yaw_calibration_value; // Add the gyro calibration value
+        gyro_pitch_data_raw -= gyro_pitch_calibration_value; // Add the gyro calibration value
         // Uncomment the following line to make the compensation active
         // re-comment the line below to see if angle calibration gets more accurate
-        angle_gyro -= gyro_yaw_data_raw * 0.0000003; // Compensate the gyro offset when the robot is rotating
+//        angle_gyro -= gyro_yaw_data_raw * 0.0000003; // Compensate the gyro offset when the robot is rotating
+        angle_gyro += gyro_pitch_data_raw * 0.0000003; // Compensate the gyro offset when the robot is rotating
         //angle_gyro = angle_gyro * 0.9996 + angle_acc * 0.0004; // Correct the drift of the gyro angle with 
                                                                  // the accelerometer angle
         angle_gyro = angle_gyro * 0.996 + angle_acc * 0.004; // Correct the drift of the gyro angle with the 
@@ -2011,15 +2028,15 @@ void balanceRobot()
         {
             noInterrupts(); // ensure interrupt can't happen when only one wheel is updated
             throttle_left_motor = speed; // overwrite the calculated wheel intervals
-            throttle_right_motor= speed; // ...with fixed value, maybe zero to brake for vertical calibration
+            throttle_right_motor = speed; // ...with fixed value, maybe zero to brake for vertical calibration
             interrupts();                // by briefly disabling interrupts
         } //if
         else // restructure conditional so we don't have a brief wrong setting
         {
             noInterrupts(); // ensure interrupt can't happen when only one wheel is updated
-            throttle_left_motor = -1* left_motor;   // oops - corections were in wrong direction
-            throttle_right_motor = -1 *right_motor; // ..so need to negate the throttle values
-            interrupts();                           // ..by briefly disabling interrupts
+            throttle_left_motor = left_motor;   
+            throttle_right_motor = right_motor; 
+            interrupts();                           
         } //else
         // do some debug output to serial monitor to see whats going on
         //count 4 millesecond loops to get to a second, and dump debug info once a second
