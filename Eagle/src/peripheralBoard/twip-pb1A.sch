@@ -5684,18 +5684,6 @@ CONNECTOR</text>
 <wire x1="91.44" y1="50.8" x2="86.36" y2="50.8" width="0.3048" layer="91"/>
 </segment>
 </net>
-<net name="N$12" class="0">
-<segment>
-<pinref part="SV8" gate="G$1" pin="1"/>
-<wire x1="12.7" y1="17.78" x2="20.32" y2="17.78" width="0.3048" layer="91"/>
-<pinref part="R2" gate="G$1" pin="2"/>
-<wire x1="20.32" y1="17.78" x2="20.32" y2="12.7" width="0.3048" layer="91"/>
-<wire x1="20.32" y1="17.78" x2="43.18" y2="17.78" width="0.3048" layer="91"/>
-<junction x="20.32" y="17.78"/>
-<pinref part="S1" gate="1" pin="O"/>
-<wire x1="43.18" y1="17.78" x2="43.18" y2="7.62" width="0.3048" layer="91"/>
-</segment>
-</net>
 <net name="N$14" class="0">
 <segment>
 <pinref part="X1" gate="G$1" pin="4"/>
@@ -5919,12 +5907,27 @@ CONNECTOR</text>
 <pinref part="S1" gate="1" pin="S"/>
 <wire x1="48.26" y1="7.62" x2="48.26" y2="15.24" width="0.3048" layer="91"/>
 <pinref part="R3" gate="G$1" pin="2"/>
-<wire x1="48.26" y1="15.24" x2="71.12" y2="15.24" width="0.3048" layer="91"/>
+<wire x1="48.26" y1="15.24" x2="53.34" y2="15.24" width="0.3048" layer="91"/>
+<wire x1="53.34" y1="15.24" x2="71.12" y2="15.24" width="0.3048" layer="91"/>
 <wire x1="71.12" y1="15.24" x2="88.9" y2="15.24" width="0.3048" layer="91"/>
 <junction x="71.12" y="15.24"/>
 <wire x1="88.9" y1="15.24" x2="88.9" y2="10.16" width="0.3048" layer="91"/>
 <pinref part="J1" gate="G$1" pin="1"/>
 <wire x1="88.9" y1="10.16" x2="99.06" y2="10.16" width="0.3048" layer="91"/>
+<wire x1="53.34" y1="15.24" x2="53.34" y2="-7.62" width="0.1524" layer="91"/>
+<junction x="53.34" y="15.24"/>
+<wire x1="53.34" y1="-7.62" x2="30.48" y2="-7.62" width="0.1524" layer="91"/>
+<pinref part="SV8" gate="G$1" pin="1"/>
+<wire x1="12.7" y1="17.78" x2="20.32" y2="17.78" width="0.3048" layer="91"/>
+<pinref part="R2" gate="G$1" pin="2"/>
+<wire x1="20.32" y1="17.78" x2="20.32" y2="12.7" width="0.3048" layer="91"/>
+<wire x1="20.32" y1="17.78" x2="30.48" y2="17.78" width="0.3048" layer="91"/>
+<junction x="20.32" y="17.78"/>
+<pinref part="S1" gate="1" pin="O"/>
+<wire x1="30.48" y1="17.78" x2="43.18" y2="17.78" width="0.3048" layer="91"/>
+<wire x1="43.18" y1="17.78" x2="43.18" y2="7.62" width="0.3048" layer="91"/>
+<wire x1="30.48" y1="-7.62" x2="30.48" y2="17.78" width="0.1524" layer="91"/>
+<junction x="30.48" y="17.78"/>
 </segment>
 </net>
 <net name="N$30" class="0">
