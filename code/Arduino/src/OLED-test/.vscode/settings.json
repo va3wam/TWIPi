@@ -1,0 +1,7 @@
+{
+    "terminal.integrated.env.osx": {
+        "PATH": "/Users/andrewmitchell/.platformio/penv/bin:/Users/andrewmitchell/.platformio/penv:/Library/Frameworks/Python.framework/Versions/3.7/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/Users/andrewmitchell/esp/xtensa-esp32-elf/bin:/Users/andrewmitchell/.mos/bin",
+        "PLATFORMIO_CALLER": "vscode"
+    },
+    "C_Cpp.intelliSenseEngineFallback": "Disabled"
+}
