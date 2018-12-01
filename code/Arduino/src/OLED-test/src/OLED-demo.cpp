@@ -5,6 +5,7 @@
 #include <Wire.h> // For I2C buses
 #include <normalEyes.h> // Old COZMO inspired eyes
 #include <otherEyes.h> // Old COZMO inspired eyes
+#include <cat.h> // Cat file created from PNG file using http://www.majer.ch/lcd/adf_bitmap.php
 /***********************************************************************************************************
   Synopsis:
   This sketch tests the Adafruit OLED 0.96inch 128x64 Pixel device. The idea of having animated OLED eyes
@@ -189,6 +190,27 @@ void drawOtherEyes(void)
 } //drawOtherEyes() 
 
 /***********************************************************************************************************
+ This function draws the normal eyes bitmap to the OLED display.
+ ***********************************************************************************************************/
+void drawCat(void) 
+{
+  Serial.println("[drawCat] Display cat bitmap ");
+  rightOLED.clearDisplay();
+  rightOLED.drawBitmap(
+    (rightOLED.width()  - LOGO_WIDTH ) / 2,
+    (rightOLED.height() - LOGO_HEIGHT) / 2,
+    cat, LOGO_WIDTH, LOGO_HEIGHT, 1);
+  rightOLED.display();
+  leftOLED.clearDisplay();
+  leftOLED.drawBitmap(
+    (leftOLED.width()  - LOGO_WIDTH ) / 2,
+    (leftOLED.height() - LOGO_HEIGHT) / 2,
+    cat, LOGO_WIDTH, LOGO_HEIGHT, 1);
+  leftOLED.display();
+  delay(1000);
+} //drawNormalEyes() 
+
+/***********************************************************************************************************
  This function draws hello world accross both OLED displays.
  ***********************************************************************************************************/
 void writeText()
@@ -268,8 +290,10 @@ void loop()
   delay(2000);
   sizeText();
   delay(2000);
-  drawNormalEyes();    // Draw a small bitmap image
+  drawNormalEyes(); 
   delay(2000);
   drawOtherEyes();
+  delay(2000);
+  drawCat();
   delay(2000);
 } //loop()
