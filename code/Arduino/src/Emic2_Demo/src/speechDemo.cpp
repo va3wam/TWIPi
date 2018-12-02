@@ -19,14 +19,25 @@
   - Parallax EMIC2 text to speech module
     Serial bus communication
     5VDC power required
+    Voice options selected with Nx command where x is one of these values
+    0: Perfect Paul (Paulo)
+    1: Huge Harry (Francisco)
+    2: Beautiful Betty
+    3: Uppity Ursula
+    4: Doctor Dennis (Enrique)
+    5: Kit the Kid
+    6: Frail Frank
+    7: Rough Rita
+    8: Whispering Wendy (Beatriz)
 
   History
 */   
-  char my_ver[] = "1.0.0"; // Semantic Versioning (https://semver.org/)
+  char my_ver[] = "1.0.1"; // Semantic Versioning (https://semver.org/)
 /*
   Version YYYY-MM-DD Description
   ------- ---------- ---------------------------------------------------------------------------------------
-  1.0.0   2018-03-29 Code base created.
+  1.0.1   2018-12-01 Added voice and volume settings
+  1.0.0   2018-11-29 Code base created.
  ***********************************************************************************************************/
 amDisplayRunningConfiguration aboutThisSketch(my_ver); //Define a function that displays info about this sketch
 #define ledPin 13 //On-board LED on this pin
@@ -73,6 +84,26 @@ void initEMIC2()
   EMIC2Serial.print('\n'); //Send a CR in case the system is already up
   while (EMIC2Serial.read() != ':'); // When the Emic 2 has initialized and is ready, it will send a single ':' character, so wait here until we receive it
   delay(10); // Short delay
+  Serial.println("[initEMIC2] Tell EMIC2 which voice we want to use");
+  EMIC2Serial.print('N2'); //Voice options are Nx where x = 0 to 8
+  EMIC2Serial.print('\n'); //Indicate that text string is at an end
+  while (EMIC2Serial.read() != ':'); // When the Emic 2 has initialized and is ready, it will send a single ':' character, so wait here until we receive it
+  delay(10); // Short delay
+  Serial.println("[initEMIC2] Set max volume");
+  EMIC2Serial.print('V18'); //Set audio volume (dB): Vx where x = -48 to 18
+  EMIC2Serial.print('\n'); //Indicate that text string is at an end
+  while (EMIC2Serial.read() != ':'); // When the Emic 2 has initialized and is ready, it will send a single ':' character, so wait here until we receive it
+  delay(10); // Short delay
+/* Need to figure out how to get this info to display on the console
+  Serial.println("[setup] Ask EMIC2 for version information");
+  EMIC2Serial.print('C'); //Voice options are Nx where x = 0 to 8
+  EMIC2Serial.print('\n'); //Indicate that text string is at an end
+  while (EMIC2Serial.read() != ':'); // When the Emic 2 has initialized and is ready, it will send a single ':' character, so wait here until we receive it
+  delay(10); // Short delay
+  Serial.println("[setup] Ask EMIC2 for its text to speech settings");
+  EMIC2Serial.print('I'); //Voice options are Nx where x = 0 to 8
+  EMIC2Serial.print('\n'); //Indicate that text string is at an end
+*/
   //EMIC2Serial.flush(); // Flush the receive buffer
 } //initEMIC2()
 

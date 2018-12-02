@@ -42,7 +42,7 @@
 /*
   Version YYYY-MM-DD Description
   ------- ---------- ---------------------------------------------------------------------------------------
-  1.0.0   2018-03-30 Code base created.
+  1.0.0   2018-11-30 Code base created.
  ***********************************************************************************************************/
 amDisplayRunningConfiguration aboutThisSketch(my_ver); // Define a function that displays info about this 
                                                        // sketch

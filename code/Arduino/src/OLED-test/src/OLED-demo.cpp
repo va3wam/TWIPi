@@ -5,7 +5,7 @@
 #include <Wire.h> // For I2C buses
 #include <normalEyes.h> // Old COZMO inspired eyes
 #include <otherEyes.h> // Old COZMO inspired eyes
-#include <cat.h> // Cat file created from PNG file using http://www.majer.ch/lcd/adf_bitmap.php
+#include <newEye.h> // Cat file created from PNG file using http://www.majer.ch/lcd/adf_bitmap.php
 /***********************************************************************************************************
   Synopsis:
   This sketch tests the Adafruit OLED 0.96inch 128x64 Pixel device. The idea of having animated OLED eyes
@@ -43,6 +43,10 @@
 /*
   Version YYYY-MM-DD Description
   ------- ---------- ---------------------------------------------------------------------------------------
+  1.0.2   2018-12-01 Added attempt at loading custom bitmap image. Need to work out that process. Also added
+                     animated eyes using drawing rounded rectangle function. In the long run we really want
+                     the eyes to be more emotive so the technique of creating images in a graphics editor 
+                     needs to be worked out.
   1.0.1   2018-11-30 Added second OLED, renamed variables to make things more reader friendly, and moved the
                      eye character array definitions out of this file and into to include files.
   1.0.0   2018-11-29 Code base created.
@@ -192,23 +196,23 @@ void drawOtherEyes(void)
 /***********************************************************************************************************
  This function draws the normal eyes bitmap to the OLED display.
  ***********************************************************************************************************/
-void drawCat(void) 
+void drawNewEye(void) 
 {
-  Serial.println("[drawCat] Display cat bitmap ");
+  Serial.println("[drawNewEye] Display new eye bitmap ");
   rightOLED.clearDisplay();
   rightOLED.drawBitmap(
     (rightOLED.width()  - LOGO_WIDTH ) / 2,
     (rightOLED.height() - LOGO_HEIGHT) / 2,
-    cat, LOGO_WIDTH, LOGO_HEIGHT, 1);
+    newEye, LOGO_WIDTH, LOGO_HEIGHT, 1);
   rightOLED.display();
   leftOLED.clearDisplay();
   leftOLED.drawBitmap(
     (leftOLED.width()  - LOGO_WIDTH ) / 2,
     (leftOLED.height() - LOGO_HEIGHT) / 2,
-    cat, LOGO_WIDTH, LOGO_HEIGHT, 1);
+    newEye, LOGO_WIDTH, LOGO_HEIGHT, 1);
   leftOLED.display();
   delay(1000);
-} //drawNormalEyes() 
+} //drawNewEye() 
 
 /***********************************************************************************************************
  This function draws hello world accross both OLED displays.
@@ -271,6 +275,125 @@ void sizeText()
 } //sizeText()
 
 /***********************************************************************************************************
+ This function draws the left eye in the left OLED.
+ ***********************************************************************************************************/
+void drawLeftEye(int eyeHeight, int eyeWidth, int eyeX, int eyeY) 
+{
+  int eyeRadius = 10;
+  leftOLED.clearDisplay();
+  leftOLED.fillRoundRect(eyeX, eyeY, eyeWidth, eyeHeight, eyeRadius, INVERSE);
+  leftOLED.display();
+} //drawLeftEye
+
+/***********************************************************************************************************
+ This function draws the right eye in the right OLED.
+ ***********************************************************************************************************/
+void drawRightEye(int eyeHeight, int eyeWidth, int eyeX, int eyeY) 
+{
+  int eyeRadius = 10;
+  rightOLED.clearDisplay();
+  rightOLED.fillRoundRect(eyeX, eyeY, eyeWidth, eyeHeight, eyeRadius, INVERSE);
+  rightOLED.display();
+} //drawRightEye()
+
+/***********************************************************************************************************
+ This function draws normal open eyes.
+ ***********************************************************************************************************/
+void closeEyes(void) 
+{
+  int eyeHeight = rightOLED.height()-20;
+  int eyeWidth = rightOLED.height();
+  int eyeX = (rightOLED.width()-eyeWidth)/2; // Centre eye
+  int eyeY = (rightOLED.height()-eyeHeight)/2; // Centre eye   
+  drawRightEye(2, eyeWidth, eyeX, (eyeY+eyeHeight-2)/2);  
+  drawLeftEye(2, eyeWidth, eyeX, (eyeY+eyeHeight-2)/2); 
+} //closeEyes()
+
+/***********************************************************************************************************
+ This function draws closed eyes.
+ ***********************************************************************************************************/
+void openEyes(void) 
+{
+  int eyeHeight = rightOLED.height()-20;
+  int eyeWidth = rightOLED.height();
+  int eyeX = (rightOLED.width()-eyeWidth)/2; // Centre eye
+  int eyeY = (rightOLED.height()-eyeHeight)/2; // Centre eye 
+  closeEyes();
+  drawRightEye(eyeHeight, eyeWidth, eyeX, eyeY);  
+  drawLeftEye(eyeHeight, eyeWidth, eyeX, eyeY); 
+} //openEyes()
+
+/***********************************************************************************************************
+ This function blinks normal eyes.
+ ***********************************************************************************************************/
+void blinkEyes(void) 
+{
+  closeEyes();
+  delay(100);
+  openEyes();
+} //blinkEyes()
+
+/***********************************************************************************************************
+ This function looks to the left.
+ ***********************************************************************************************************/
+void lookLeft(void) 
+{
+  int eyeHeight = rightOLED.height()-20;
+  int eyeWidth = rightOLED.height();
+  int eyeX = (rightOLED.width()-eyeWidth)/2; // Centre eye
+  int eyeY = (rightOLED.height()-eyeHeight)/2; // Centre eye 
+  closeEyes();
+  delay(100);
+  drawRightEye(eyeHeight, eyeWidth, eyeX+20, eyeY);  
+  drawLeftEye(eyeHeight, eyeWidth, eyeX+20, eyeY); 
+} //lookLeft()
+
+/***********************************************************************************************************
+ This function looks to the right.
+ ***********************************************************************************************************/
+void lookRight(void) 
+{
+  int eyeHeight = rightOLED.height()-20;
+  int eyeWidth = rightOLED.height();
+  int eyeX = (rightOLED.width()-eyeWidth)/2; // Centre eye
+  int eyeY = (rightOLED.height()-eyeHeight)/2; // Centre eye 
+  closeEyes();
+  delay(100);
+  drawRightEye(eyeHeight, eyeWidth, eyeX-20, eyeY);  
+  drawLeftEye(eyeHeight, eyeWidth, eyeX-20, eyeY); 
+} //lookRight()
+
+/***********************************************************************************************************
+ This function looks to the up.
+ ***********************************************************************************************************/
+void lookUp(void) 
+{
+  int eyeHeight = rightOLED.height()-20;
+  int eyeWidth = rightOLED.height();
+  int eyeX = (rightOLED.width()-eyeWidth)/2; // Centre eye
+  int eyeY = (rightOLED.height()-eyeHeight)/2; // Centre eye 
+  closeEyes();
+  delay(100);
+  drawRightEye(eyeHeight, eyeWidth, eyeX, eyeY-10);  
+  drawLeftEye(eyeHeight, eyeWidth, eyeX, eyeY-10); 
+} //lookUp()
+
+/***********************************************************************************************************
+ This function looks to the down.
+ ***********************************************************************************************************/
+void lookDown(void) 
+{
+  int eyeHeight = rightOLED.height()-20;
+  int eyeWidth = rightOLED.height();
+  int eyeX = (rightOLED.width()-eyeWidth)/2; // Centre eye
+  int eyeY = (rightOLED.height()-eyeHeight)/2; // Centre eye 
+  closeEyes();
+  delay(100);
+  drawRightEye(eyeHeight, eyeWidth, eyeX, eyeY+10);  
+  drawLeftEye(eyeHeight, eyeWidth, eyeX, eyeY+10); 
+} //lookDown()
+
+/***********************************************************************************************************
  Standard Arduino setup function that runs at the start of the sketch. Runs once.
  ***********************************************************************************************************/
 void setup() 
@@ -279,13 +402,7 @@ void setup()
   display_Running_Sketch(); //Dump useful sketch information to the console
   startI2Cone(); // Start the first I2C bus, which the servo controller is connected to
   initOLEDs(); // Set up the OLED display
-} //setup()
-
-/***********************************************************************************************************
- Standard Arduino main loop. Runs as a continuous loop.
- ***********************************************************************************************************/
-void loop() 
-{
+  randomSeed(analogRead(0)); // Help make the random function more random
   writeText();
   delay(2000);
   sizeText();
@@ -294,6 +411,37 @@ void loop()
   delay(2000);
   drawOtherEyes();
   delay(2000);
-  drawCat();
+  drawNewEye();
   delay(2000);
+  openEyes(); // Display normal open eyes
+} //setup()
+
+/***********************************************************************************************************
+ Standard Arduino main loop. Runs as a continuous loop. Simulating eye movement.
+ ***********************************************************************************************************/
+void loop() 
+{
+  delay(random(100, 2000));
+  long randNumber = random(5); // Decide what to do next
+  switch (randNumber) 
+  {
+    case 0: // Look straight ahead
+      openEyes();
+      break;
+    case 1: // Look left
+      lookLeft();
+      break;
+    case 2: // Look right
+      lookRight();
+      break;
+    case 3: // Look up
+      lookUp();
+      break;
+    case 4: // Look up
+      lookDown();
+      break;
+    default:
+      // statements
+      break;
+  } //switch()  
 } //loop()
