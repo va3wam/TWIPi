@@ -32,8 +32,13 @@
   Version YYYY-MM-DD Description
 */   
   String my_ver = "2.2.2";
-//  char my_ver[] = "2.2.1"; // Semantic Versioning (https://semver.org/)
-/*
+/*  char my_ver[] = "2.2.1"; // Semantic Versioning (https://semver.org/)
+
+    Given a version number MAJOR.MINOR.PATCH, increment the:
+      MAJOR version when you make incompatible API changes,
+      MINOR version when you add functionality in a backwards-compatible manner, and
+      PATCH version when you make backwards-compatible bug fixes.
+
   ------- ---------- ---------------------------------------------------------------------------------------
   2.2.2   2018-11-28 Changed reference to Gyro and accelerometer sensors to jive with the new IMU 
           orientation inside the robot's chasis. X (roll) has become Y (pitch), Y (pitch) has become Z (Yaw).
@@ -127,6 +132,7 @@ TaskHandle_t monWeb; // Handle for task that monitors HTTP
 TaskHandle_t monBalance; // Handle for task that balances robot
 long cntBalance, cntLoop;
 
+void flashLCD();  // from http://forum.arduino.cc/index.php?topic=42835.0
 /***********************************************************************************************************
  Define PID and motor control variables and constants
  ***********************************************************************************************************/
@@ -281,7 +287,9 @@ String sendTelemetry = "flagoff"; // Flag to control if balance telemetry data i
  https://www.tutorialspoint.com/websockets/websockets_send_receive_messages.htm. This is the code delivered 
  to any browser that connects to the robot. 
  ***********************************************************************************************************/
-static const char PROGMEM INDEX_HTML[] = 
+
+/*
+static const char INDEX_HTML[] = 
 {
     R"rawliteral(
     <!DOCTYPE html>
@@ -424,7 +432,11 @@ static const char PROGMEM INDEX_HTML[] =
         </body>
     </html>
     )rawliteral"
-};
+ };
+*/
+
+// following line is equivalent to the above, following technique described in 
+static const char INDEX_HTML[] = "<!DOCTYPE html> <html> <head> <meta charset=\"utf-8\"/> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\"> <title>SBS Mark2 Remote Home Page</title> <style>\"body{background-color: #808080; font-family: Arial, Helvetica, Sans-Serif; Color: #000000;}\" </style> <script type=\"text/javascript\" > var websock; function start(){websock=new WebSocket('ws://' + window.location.hostname + ':81/'); websock.onopen=function(evt){console.log('websock open');}; websock.onclose=function(evt){console.log('websock close');}; websock.onerror=function(evt){console.log(evt);}; websock.onmessage=function(evt){console.log('[SegbotSTEP] evt=' + evt.data); var msg=JSON.parse(evt.data); console.log('[SegbotSTEP] msg.item=' + msg.item); if (msg.item==='LED'){var e=document.getElementById('ledstatus'); console.log('[SegbotSTEP] msg.value=' + msg.value); if (msg.value==='ledon'){e.style.color='red'; console.log('[SegbotSTEP] set ledstatus color to red');}else if (msg.value==='ledoff'){e.style.color='black'; console.log('[SegbotSTEP] set ledstatus color to black');}else{console.log('[SegbotSTEP] unknown LED value. evt.data=' + evt.data); item unknow}}else if (msg.item==='LCD'){var e1=document.getElementById('lcd1'); var e2=document.getElementById('lcd2'); console.log('[SegbotSTEP] update LCD line 1 with ' + msg.line1); console.log('[SegbotSTEP] update LCD line 2 with ' + msg.line2); e1.value=msg.line1; e2.value=msg.line2;}else if (msg.item==='ping'){websock.send(evt.data);}else if (msg.item==='balGraph'){console.log('[SegbotSTEP] Web client does not support graphing, ignore message');}else{console.log('[SegbotSTEP] unknown item (case sensative). evt.data=' + evt.data);}};}function ledControl(e){var msg={item: \"LED\", action: \"set\", value: e.id}; websock.send(JSON.stringify(msg)); console.log('[SegbotSTEP] sent this to server: ' + JSON.stringify(msg));}function lcdControl(e){if (e.id==='getlcd'){var x=\"get\";}else{var x=\"set\";}var l1=document.getElementById('lcd1'); var l2=document.getElementById('lcd2'); var msg={item: \"LCD\", action: x, line1: l1.value, line2: l2.value}; websock.send(JSON.stringify(msg)); console.log('[SegbotSTEP] sent this to server: ' + JSON.stringify(msg));}</script> </head> <body onload=\"javascript:start();\"> <h1>SBS Mark2 Web-Based Control Center</h1> Note: Balancing telemetry graph intentionally not included here due to complications serving up onjects such as canvasjs from the ESP32 <div id=\"ledstatus\"><b>LED</b></div><button id=\"ledon\" type=\"button\" onclick=\"ledControl(this);\">On</button> <button id=\"ledoff\" type=\"button\" onclick=\"ledControl(this);\">Off</button> <p><b>1650 LCD</b><br><input type=\"text\" id=\"lcd1\" style=\"background:GreenYellow; color:black;text-align:center;\" maxlength=\"16\"/><br><input type=\"text\" id=\"lcd2\" style=\"background:GreenYellow; color:black;text-align:center;\" maxlength=\"16\"/><br><button id=\"getlcd\" type=\"button\" onclick=\"lcdControl(this);\">Get</button> <button id=\"setlcd\" type=\"button\" onclick=\"lcdControl(this);\">Set</button> </body> </html>\n";
 
 /***********************************************************************************************************
  This is the interrupt handler for hardware timer 0. This routine coordinates a variable with main.  
@@ -570,12 +582,12 @@ void startI2Cone()
 
     if(cnt==0)
     {
-        Serial.print("[startI2Cone] ERROR! No I2C device found on I2Cone. Expected LCD at 0x38.");
+        Serial.print(String("[startI2Cone] ERROR! No I2C device found on I2Cone. Expected LCD at 0x38."));
         LCD_FOUND = false;
     } //if
     else
     {
-        Serial.print("[startI2Cone] LCD found on I2Cone as expected at 0x38.");
+        Serial.print(String("[startI2Cone] LCD found on I2Cone as expected at 0x38."));
         LCD_FOUND = true;
     } //else
 
@@ -629,13 +641,12 @@ void startI2Ctwo()
 
 } //startI2Ctwo()
 
-
 /***********************************************************************************************************
  This function initializes the Open Smart 1602 LCD Display
  ***********************************************************************************************************/
 void initializeLCD()                                             
 {
-
+//  extern void flashLCD(); 
     LINE("[initializeLCD] Initialize LCD. Source code line: ", __LINE__);
     lcd.clear(); // Clear the LCD screen
     lcd.init(); // Initialize the LCD object 
@@ -728,7 +739,6 @@ void flashLCD()
     delay(100);
 
 } //flashLCD()
-
 /***********************************************************************************************************
  This function handles hexdumps that come in over a websocket.
  ***********************************************************************************************************/
@@ -1134,9 +1144,15 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
    Serial.println(f,6);  // the number in the second argument tells how many digits of precision to use
 */
          spf("[process_Client_JSON_msg] Client [%u] wants to set the following PID variables:\r\n", num);
-         spf("pid_p_gain = [%s]",root["pGain"]);                             // Assign value sent from cleint for P gain
-         spf("pid_i_gain = [%s]",root["iGain"]);                             // Assign value sent from cleint for I gain
-         spf("pid_d_gain = [%s]",root["dGain"]);                             // Assign value sent from cleint for D gain
+//         spf("pid_p_gain = [%s]",root["pGain"]);                             // Assign value sent from cleint for P gain
+//         spf("pid_i_gain = [%s]",root["iGain"]);                             // Assign value sent from cleint for I gain
+//         spf("pid_d_gain = [%s]",root["dGain"]);                             // Assign value sent from cleint for D gain
+         String pGain = root["pGain"];                                         // Assign value sent from client for P gain
+         String iGain = root["iGain"];                                         // Assign value sent from client for I gain
+         String dGain = root["dGain"];                                         // Assign value sent from client for D gain
+           spdl("pid_p_gain = ",pGain);                                        // just display them for now
+           spdl("pid_i_gain = ",iGain);
+           spdl("pid_d_gain = ",dGain);
       } //if
       else if(action == "get")                                               // If client wants to GET PID values
       {
