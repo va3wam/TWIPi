@@ -31,7 +31,7 @@
   History
   Version YYYY-MM-DD Description
 */   
-  String my_ver = "2.2.2";
+  String my_ver = "2.2.3";
 /*  char my_ver[] = "2.2.1"; // Semantic Versioning (https://semver.org/)
 
     Given a version number MAJOR.MINOR.PATCH, increment the:
@@ -40,6 +40,9 @@
       PATCH version when you make backwards-compatible bug fixes.
 
   ------- ---------- ---------------------------------------------------------------------------------------
+  2.2.3   2018-12-06 -recode the embedded web server html string so the compiler won't give errors
+          -change string output in
+          -remove obsolete commented out code (can still be retrieved from previous versions)
   2.2.2   2018-11-28 Changed reference to Gyro and accelerometer sensors to jive with the new IMU 
           orientation inside the robot's chasis. X (roll) has become Y (pitch), Y (pitch) has become Z (Yaw).
           Also had to reverse the front and back motor rotation value to align with orientaiton of the motors 
@@ -102,15 +105,13 @@
 
 /***********************************************************************************************************
  Define two I2C buses 
- I2C bus 1 (I2Cone): SDA1 on pin 23 and SCL1 on pin 22
- I2C bus 2 (I2Ctwo): SDA2 on pin 4 and SCL2 on pin 5
+  I2C bus 1 (I2Cone): SDA1 on pin 23 and SCL1 on pin 22
+  I2C bus 2 (I2Ctwo): SDA2 on pin 4 and SCL2 on pin 5
  ***********************************************************************************************************/
 #define SDA1 23
 #define SCL1 22
 #define SDA2 4
 #define SCL2 5
-//TwoWire I2Cone = TwoWire(0);
-//TwoWire I2Ctwo = TwoWire(1);
 
 /***********************************************************************************************************
  Define timer0 variables and objects
@@ -288,154 +289,10 @@ String sendTelemetry = "flagoff"; // Flag to control if balance telemetry data i
  to any browser that connects to the robot. 
  ***********************************************************************************************************/
 
-/*
-static const char INDEX_HTML[] = 
-{
-    R"rawliteral(
-    <!DOCTYPE html>
-    <html>
-        <head>
-            <meta charset="utf-8"/>
-            <meta name = "viewport" content = "width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable=0">
-            <title>SBS Mark2 Remote Home Page</title>
-            <style>
-                "body { background-color: #808080; font-family: Arial, Helvetica, Sans-Serif; Color: #000000; }"
-            </style>
-            <script type = "text/javascript" >
-                var websock;
-                ////////////////////////////////////////////////////////////////////////////////////////////
-                // This function runs when the web page first loads in the browser. It defines websocket 
-                // events which trigger during interactions with the server (robot). There is logging 
-                // included in this code so if needed open a console in your browser. In Firefox select 
-                // Tools/Web Developer/Toggle Tools then click the Console tab Use the garbage can icon to 
-                // clear old messages.  
-                ////////////////////////////////////////////////////////////////////////////////////////////
-                function start() 
-                {
-    
-                    ////////////////////////////////////////////////////////////////////////////////////////
-                    // Define websock event functions other than "onmessage"
-                    ////////////////////////////////////////////////////////////////////////////////////////
-                    websock = new WebSocket('ws://' + window.location.hostname + ':81/'); // Define websocket object
-                    websock.onopen = function(evt) { console.log('websock open'); }; // Log new connections
-                    websock.onclose = function(evt) { console.log('websock close'); }; // Log closed connection
-                    websock.onerror = function(evt) { console.log(evt); }; // Log connection errors
-               
-                    ////////////////////////////////////////////////////////////////////////////////////////
-                    // Define the onmessage function for processing incoming server messages.
-                    ////////////////////////////////////////////////////////////////////////////////////////
-                    websock.onmessage = function(evt)                                           
-                    {
-                        console.log('[SegbotSTEP] evt = ' + evt.data); // Log incoming message
-                        var msg = JSON.parse(evt.data); // Parse incoming message (JSON)
-                        console.log('[SegbotSTEP] msg.item = ' + msg.item); // Log JSON msg element 1
-                        if (msg.item === 'LED') // If this message is about the LED
-                        {
-                            var e = document.getElementById('ledstatus'); // Create handle for LED status
-                            console.log('[SegbotSTEP] msg.value = ' + msg.value); // Log JSON msg element 3
-                            if (msg.value === 'ledon') // If message sets LED on
-                            {
-                                e.style.color = 'red'; // Change LED text to RED
-                                console.log('[SegbotSTEP] set ledstatus color to red'); // Log action
-                            } //if
-                            else if (msg.value === 'ledoff') // If message sets LED off
-                            {
-                                e.style.color = 'black'; // Change LED text to BLACK
-                                console.log('[SegbotSTEP] set ledstatus color to black'); // Log action
-                            } //else if
-                            else // If you get here, command unknown
-                            {
-                                console.log('[SegbotSTEP] unknown LED value. evt.data = ' + evt.data);  // Log error item unknow
-                            } // else
-                        } //if
-                        else if (msg.item === 'LCD') // If this message is about the LCD
-                        {
-                            var e1 = document.getElementById('lcd1'); // Create handle for LCD line 1 
-                            var e2 = document.getElementById('lcd2'); // Create handle for LCD line 2 
-                            console.log('[SegbotSTEP] update LCD line 1 with ' + msg.line1); // Log JSON msg line1 element
-                            console.log('[SegbotSTEP] update LCD line 2 with ' + msg.line2); // Log JSON msg line1 element
-                            e1.value = msg.line1; // Place JSON line1 to text box 1   
-                            e2.value = msg.line2; // Place JSON line1 to text box 1   
-                        } //else if
-                        else if (msg.item === 'ping') // Turn around timing test message 
-                        {
-                            websock.send(evt.data); // Send message from server back
-                        } //else if                  
-                        else if (msg.item === 'balGraph') // If this is balancing data 
-                        {
-                            console.log('[SegbotSTEP] Web client does not support graphing, ignore message');      
-                        } //else if                  
-                        else // No idea what this ITEM type is
-                        {
-                            console.log('[SegbotSTEP] unknown item (case sensative). evt.data = ' + evt.data); // Log error item unknown                   
-                        } //else
-                    }; //websock.onmessage() 
-                } //start()           
- 
-                ////////////////////////////////////////////////////////////////////////////////////////////
-                // This function runs when either of the LED control buttons are pressed. These two buttons 
-                // share the same HTML DIV class ID (ledstatus), which allows us to combine the ID of each 
-                // button (ledon and ledoff) with the DIV class ID they belong to to message the JSON server 
-                // (robot) what we want to do with the onboard LED of the Huzzah32    
-                ////////////////////////////////////////////////////////////////////////////////////////////
-                function ledControl(e) 
-                {  
-                    var msg =           // Construct JSON string
-                    {
-                        item:   "LED",  // JSON msg element 1
-                        action: "set",  // JSON msg element 2
-                        value:  e.id    // JSON msg element 3
-                    }; //var msg
-                    websock.send(JSON.stringify(msg)); // Send JSON message to server
-                    console.log('[SegbotSTEP] sent this to server: ' + JSON.stringify(msg)); // Log message sent
-                } //ledControl()
+// following line is equivalent to previous use of raw literal, following technique described in 
+//     https://techtutorialsx.com/2017/12/16/esp32-arduino-async-http-server-serving-a-html-page-from-flash-memory/
+// ...but does not produce compiler errors
 
-                ////////////////////////////////////////////////////////////////////////////////////////////
-                // This function GETs or SETs the 2 lines of the LCD on the robot    
-                ////////////////////////////////////////////////////////////////////////////////////////////
-                function lcdControl(e) 
-                {  
-                    if (e.id === 'getlcd') // If we want to get the LCD values
-                    {
-                        var x = "get"; // Element 2 (action) will be GET                
-                    } //if
-                    else // If we want to set the LCD values
-                    {
-                        var x = "set"; // Element 2 (action) will be SET
-                    } //else
-                    var l1 = document.getElementById('lcd1'); // Create handle for LCD line 1 
-                    var l2 = document.getElementById('lcd2'); // Create handle for LCD line 2 
-                    var msg =               // Construct JSON GET string
-                    {
-                        item:   "LCD",      // JSON msg element 1
-                        action: x,          // JSON msg element 2
-                        line1:  l1.value,   // JSON msg element 3
-                        line2:  l2.value    // JSON msg element 4                
-                    }; //var msg
-                    websock.send(JSON.stringify(msg)); // Send JSON message to server
-                    console.log('[SegbotSTEP] sent this to server: ' + JSON.stringify(msg)); // Log message sent
-                } //lcdControl()
-            </script>
-        </head>
-        <body onload="javascript:start();">
-            <h1>SBS Mark2 Web-Based Control Center</h1>
-            Note: Balancing telemetry graph intentionally not included here due to complications serving up onjects 
-            such as canvasjs from the ESP32 
-            <div id="ledstatus"><b>LED</b></div>
-            <button id="ledon"  type="button" onclick="ledControl(this);">On</button> 
-            <button id="ledoff" type="button" onclick="ledControl(this);">Off</button>
-            <p><b>1650 LCD</b><br>
-            <input type="text" id="lcd1" style="background:GreenYellow; color:black;text-align:center;" maxlength="16"/><br>
-            <input type="text" id="lcd2" style="background:GreenYellow; color:black;text-align:center;" maxlength="16"/><br>
-            <button id="getlcd"  type="button" onclick="lcdControl(this);">Get</button> 
-            <button id="setlcd" type="button" onclick="lcdControl(this);">Set</button>
-        </body>
-    </html>
-    )rawliteral"
- };
-*/
-
-// following line is equivalent to the above, following technique described in 
 static const char INDEX_HTML[] = "<!DOCTYPE html> <html> <head> <meta charset=\"utf-8\"/> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\"> <title>SBS Mark2 Remote Home Page</title> <style>\"body{background-color: #808080; font-family: Arial, Helvetica, Sans-Serif; Color: #000000;}\" </style> <script type=\"text/javascript\" > var websock; function start(){websock=new WebSocket('ws://' + window.location.hostname + ':81/'); websock.onopen=function(evt){console.log('websock open');}; websock.onclose=function(evt){console.log('websock close');}; websock.onerror=function(evt){console.log(evt);}; websock.onmessage=function(evt){console.log('[SegbotSTEP] evt=' + evt.data); var msg=JSON.parse(evt.data); console.log('[SegbotSTEP] msg.item=' + msg.item); if (msg.item==='LED'){var e=document.getElementById('ledstatus'); console.log('[SegbotSTEP] msg.value=' + msg.value); if (msg.value==='ledon'){e.style.color='red'; console.log('[SegbotSTEP] set ledstatus color to red');}else if (msg.value==='ledoff'){e.style.color='black'; console.log('[SegbotSTEP] set ledstatus color to black');}else{console.log('[SegbotSTEP] unknown LED value. evt.data=' + evt.data); item unknow}}else if (msg.item==='LCD'){var e1=document.getElementById('lcd1'); var e2=document.getElementById('lcd2'); console.log('[SegbotSTEP] update LCD line 1 with ' + msg.line1); console.log('[SegbotSTEP] update LCD line 2 with ' + msg.line2); e1.value=msg.line1; e2.value=msg.line2;}else if (msg.item==='ping'){websock.send(evt.data);}else if (msg.item==='balGraph'){console.log('[SegbotSTEP] Web client does not support graphing, ignore message');}else{console.log('[SegbotSTEP] unknown item (case sensative). evt.data=' + evt.data);}};}function ledControl(e){var msg={item: \"LED\", action: \"set\", value: e.id}; websock.send(JSON.stringify(msg)); console.log('[SegbotSTEP] sent this to server: ' + JSON.stringify(msg));}function lcdControl(e){if (e.id==='getlcd'){var x=\"get\";}else{var x=\"set\";}var l1=document.getElementById('lcd1'); var l2=document.getElementById('lcd2'); var msg={item: \"LCD\", action: x, line1: l1.value, line2: l2.value}; websock.send(JSON.stringify(msg)); console.log('[SegbotSTEP] sent this to server: ' + JSON.stringify(msg));}</script> </head> <body onload=\"javascript:start();\"> <h1>SBS Mark2 Web-Based Control Center</h1> Note: Balancing telemetry graph intentionally not included here due to complications serving up onjects such as canvasjs from the ESP32 <div id=\"ledstatus\"><b>LED</b></div><button id=\"ledon\" type=\"button\" onclick=\"ledControl(this);\">On</button> <button id=\"ledoff\" type=\"button\" onclick=\"ledControl(this);\">Off</button> <p><b>1650 LCD</b><br><input type=\"text\" id=\"lcd1\" style=\"background:GreenYellow; color:black;text-align:center;\" maxlength=\"16\"/><br><input type=\"text\" id=\"lcd2\" style=\"background:GreenYellow; color:black;text-align:center;\" maxlength=\"16\"/><br><button id=\"getlcd\" type=\"button\" onclick=\"lcdControl(this);\">Get</button> <button id=\"setlcd\" type=\"button\" onclick=\"lcdControl(this);\">Set</button> </body> </html>\n";
 
 /***********************************************************************************************************
@@ -501,9 +358,8 @@ void IRAM_ATTR onTimer0()
                                                                                  // SINGLE
     //timer0_write(ESP.getCycleCount() + t0_count -1 ); // Prime next interrupt to go off after proper interval
 
-//    portENTER_CRITICAL_ISR(&timerMux); // Prevent anyone else from updating the variable
-    t0_per_sec++ ; // Count one more t0 int seen in this second
-    portEXIT_CRITICAL_ISR(&timerMux); // Allow anyone else to update the variable
+    t0_per_sec++ ;                          // Count one more t0 int seen in this second
+    portEXIT_CRITICAL_ISR(&timerMux);       // Allow anyone else to update the variable
     cntTimer0++;
  
 } //onTimer0()
@@ -514,13 +370,11 @@ void IRAM_ATTR onTimer0()
  ***********************************************************************************************************/
 void display_Running_Sketch()
 {                                 
-  
     LINE("[display_Running_Sketch] Displaying basic running environment. Source code line: ", __LINE__);
     sp("[display_Running_Sketch] Sketch Name: ");spl(__FILE__);
     sp("[display_Running_Sketch] Sketch Version: "); spl(my_ver);
     sp("[display_Running_Sketch] Sketch compilation date: ");sp(__DATE__);sp(" at ");spl(__TIME__);
     spdl("[display_Running_Sketch] ESP32 SDK used: ", ESP.getSdkVersion());
-
 } //display_Running_Sketch()
 
 /***********************************************************************************************************
@@ -529,7 +383,6 @@ void display_Running_Sketch()
  ***********************************************************************************************************/
 void writeLED(bool LEDon)
 {
-
     LINE("[writeLED] write value to LED. Source code line: ", __LINE__);
     LEDStatus = LEDon; // Track status of LED
     if (LEDon) // If request is to turn LED on
@@ -554,16 +407,12 @@ void writeLED(bool LEDon)
  ***********************************************************************************************************/
 void startI2Cone()
 {
-      
     LINE("[startI2Cone] Initialize I2C bus. Source code line: ", __LINE__);
-//    I2Cone.begin(SDA1,SCL1,400000); // 400KHz, uppder speed limit for ESP32 I2C
     Wire.begin(SDA1,SCL1,400000); // 400KHz, uppder speed limit for ESP32 I2C
     uint8_t cnt=0;
     for(uint8_t i=0;i<128;i++)
     {
-//        I2Cone.beginTransmission(i);
         Wire.beginTransmission(i);
-//        uint8_t ec=I2Cone.endTransmission(true);
         uint8_t ec=Wire.endTransmission(true);
         if(ec==0)
         {
@@ -602,16 +451,12 @@ void startI2Cone()
  ***********************************************************************************************************/
 void startI2Ctwo()
 {
-      
     LINE("[startI2Ctwo] Initialize I2C bus. Source code line: ", __LINE__);
-//    I2Ctwo.begin(SDA2,SCL2,400000); // 400KHz, uppder speed limit for ESP32 I2C
     Wire1.begin(SDA2,SCL2,400000); // 400KHz, uppder speed limit for ESP32 I2C
     uint8_t cnt=0;
     for(uint8_t i=0;i<128;i++)
     {
-//        I2Ctwo.beginTransmission(i);
         Wire1.beginTransmission(i);
-//        uint8_t ec=I2Ctwo.endTransmission(true);
         uint8_t ec=Wire1.endTransmission(true);
         if(ec==0)
         {
@@ -646,7 +491,6 @@ void startI2Ctwo()
  ***********************************************************************************************************/
 void initializeLCD()                                             
 {
-//  extern void flashLCD(); 
     LINE("[initializeLCD] Initialize LCD. Source code line: ", __LINE__);
     lcd.clear(); // Clear the LCD screen
     lcd.init(); // Initialize the LCD object 
@@ -660,7 +504,6 @@ void initializeLCD()
  ***********************************************************************************************************/
 void sendLCD(String LCDmsg, byte LCDline)
 {
-
     LINE("[sendLCD] Send text to LCD. Source code line: ", __LINE__);
     byte textLen = LCDmsg.length(); // Length of message to send
     byte LCDcolumn = 0; // Starting column of message 
@@ -696,13 +539,11 @@ void sendLCD(String LCDmsg, byte LCDline)
 
 /***********************************************************************************************************
  This function scrolls a message from left to right on the LCD. Note that both lines of the display scroll. 
- You can send a blank message to this function to scroll the current messages displayed on both lines off 
- the LCD screen. Note that the second argument passed to this function is not used if a null message if 
- passed.
+ You can send a blank message to this function to scroll the current messages displayed on both lines of 
+ the LCD screen. Note that the 2nd argument passed to this function is not used if a null message if passed.
  ***********************************************************************************************************/
 void scrollLCD(String LCDmsg, byte LCDline)
 {
-
     LINE("[scrollLCD] Scrolling text on LCD. Source code line: ", __LINE__);
     byte textLen = LCDmsg.length(); // Length of message to send
     byte LCDcolumn = 0; // Starting column of message 
@@ -726,7 +567,6 @@ void scrollLCD(String LCDmsg, byte LCDline)
  ***********************************************************************************************************/
 void flashLCD()   
 {
-
     LINE("[flashLCD] Flashing back light of LCD. Source code line: ", __LINE__);
     for (byte cnt = 0; cnt < 10; cnt++) 
     {
@@ -744,7 +584,6 @@ void flashLCD()
  ***********************************************************************************************************/
 void hexdump(const void *mem, uint32_t len, uint8_t cols = 16) 
 {
-
     LINE("[hexdump] HEX dump from websocket. Source code line: ", __LINE__);
     const uint8_t* src = (const uint8_t*) mem;
 	Serial.printf("\n[hexdump] Address: 0x%08X len: 0x%X (%d)", (ptrdiff_t)src, len, len);
@@ -779,7 +618,6 @@ void hexdump(const void *mem, uint32_t len, uint8_t cols = 16)
  ***********************************************************************************************************/
 void startWiFi()
 {
- 
     LINE("[startWiFi] Scanning/connecting to strongest known AP signal. Source code line: ", __LINE__);
     //WiFi.mode();
     wifiMulti.addAP(ssid0, password); // Add Wi-Fi AP we may be able to connect to
@@ -811,7 +649,6 @@ void startWiFi()
  *************************************************************************************************************************************/
 void startDNS()
 {
-
     LINE("[startDNS] Start the DNS service. Source code line: ", __LINE__);
     if (mdns.begin("esp32")) // Start mDNS service
     {
@@ -839,7 +676,6 @@ void startDNS()
  ***********************************************************************************************************/
 volatile void handleRoot()
 {
-
     LINE("[handleRoot] handleRoot web service event triggered. Source code line: ", __LINE__);
     server.send_P(200, "text/html", INDEX_HTML); // Send the HTML page defined in INDEX_HTML
     spl("[handleRoot] Home page  requested via HTTP request on port 80. Sent EEPROM defined document page to client");                              
@@ -852,7 +688,6 @@ volatile void handleRoot()
  ***********************************************************************************************************/
 volatile void handleNotFound()
 {
-
     LINE("[handleNotFound] File not found web service event triggered. Source code line: ", __LINE__);
     String message = "File Not Found\n\n"; // Build string with 404 file not found message
         message += "URI: ";
@@ -876,7 +711,6 @@ volatile void handleNotFound()
  ***********************************************************************************************************/
 void startWebServer()
 {
-
     LINE("[startWebServer] Starting Webserver service. Source code line: ", __LINE__);
     server.on("/", handleRoot); // Attach function for handling root page (/)
     server.on ( "/inline", []() // Attach simple inline page to test web server
@@ -894,7 +728,6 @@ void startWebServer()
  ***********************************************************************************************************/
 void startWebsocket()
 {
- 
     LINE("[startWebsocket] Starting Websocket service. Source code line: ", __LINE__);
     webSocket.begin();
     webSocket.onEvent(webSocketEvent);    
@@ -906,7 +739,6 @@ void startWebsocket()
  ***********************************************************************************************************/
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) 
 {
-
     LINE("[webSocketEvent] Websocket event detected. Source code line: ", __LINE__);
     if(JSON_DEBUG) // If JSON message debug flag set  
     {
@@ -996,7 +828,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
  *************************************************************************************************************************************/
 void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size_t length)
 {
-
    String payload_str = String((char*) payload);
    StaticJsonBuffer<500> jsonBuffer;                                         // Use arduinojson.org/assistant to compute the capacity
    JsonObject& root = jsonBuffer.parseObject(payload_str);                   // Create JSON object tree with reference handle "root"
@@ -1140,9 +971,11 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
    String s_val1 = "123.456789";
    float f;
    Serial.print("Taking String with 3 digit and 6 decimal places and putting in float: ");
+// suspect that in the following code, the 6 should be the second argument of toFloat, not Serial.println   
    f = s_val1.toFloat();
    Serial.println(f,6);  // the number in the second argument tells how many digits of precision to use
 */
+
          spf("[process_Client_JSON_msg] Client [%u] wants to set the following PID variables:\r\n", num);
 //         spf("pid_p_gain = [%s]",root["pGain"]);                             // Assign value sent from cleint for P gain
 //         spf("pid_i_gain = [%s]",root["iGain"]);                             // Assign value sent from cleint for I gain
@@ -1201,7 +1034,6 @@ void sendClientPing(uint8_t num)
  *************************************************************************************************************************************/
 void sendClientLEDState(uint8_t num)
 {
-
    String msg = "";                                                          // String to hold JSON message to be transmitted
    StaticJsonBuffer<200> jsonBuffer;                                         // Memory pool for JSON object tree
                                                                              // Use arduinojson.org/assistant to compute the capacity
@@ -1235,7 +1067,6 @@ void sendClientLEDState(uint8_t num)
  *************************************************************************************************************************************/
 void sendClientLCDState(uint8_t num)
 {
-
    String msg = "";                                                          // String to hold JSON message to be transmitted
    StaticJsonBuffer<200> jsonBuffer;                                         // Memory pool for JSON object tree
                                                                              // Use arduinojson.org/assistant to compute the capacity
@@ -1281,7 +1112,6 @@ void sendClientLCDState(uint8_t num)
  *************************************************************************************************************************************/
 void sendClientBalanceGraph(uint8_t num,float a1, float a2, float a3, float a4)
 {
-
    String msg = "";                                                          // String to hold JSON message to be transmitted
    StaticJsonBuffer<200> jsonBuffer;                                         // Memory pool for JSON object tree
                                                                              // Use arduinojson.org/assistant to compute the capacity
@@ -1341,7 +1171,6 @@ void sendClientBalanceGraph(uint8_t num,float a1, float a2, float a3, float a4)
  *************************************************************************************************************************************/
 void sendClientVariableValue(uint8_t num, String variable)
 {
-
    String msg = "";                                                          // String to hold JSON message to be transmitted
    StaticJsonBuffer<200> jsonBuffer;                                         // Memory pool for JSON object tree
                                                                              // Use arduinojson.org/assistant to compute the capacity
@@ -1398,7 +1227,6 @@ void sendClientVariableValue(uint8_t num, String variable)
  ***********************************************************************************************************/
 String ipToString(IPAddress ip)
 {
-
     LINE("[ipToString] Converting IP address to String. Source code line: ", __LINE__);
     String s="";
     for (int i=0; i<4; i++)
@@ -1418,7 +1246,6 @@ String ipToString(IPAddress ip)
  ***********************************************************************************************************/
 void initializeIMU()
 {
-
     byte error, lowByte;
 //    byte highByte;
 //    int address;
@@ -1428,26 +1255,18 @@ void initializeIMU()
     LINE("[initializeIMU] Initializing the MPU6050 IMU. Source code line: ", __LINE__);
     sp("[initializeIMU]: Checking to see if the IMU is found on I2Ctwo at expected I2C address of 0x");
     spl(MPU_address,HEX);
-//    I2Ctwo.beginTransmission(MPU_address);
     Wire1.beginTransmission(MPU_address);
-//    error = I2Ctwo.endTransmission(true);
     error = Wire1.endTransmission(true);
     if (error == 0)
     {
         sp("[initializeIMU] I2C device found on I2Ctwo at address 0x");
         spl(MPU_address,HEX);
         spl("[initializeIMU] The IMU MPU-6050 found at expected address");
-//        I2Ctwo.beginTransmission(MPU_address);
-//        I2Ctwo.write(MPU6050_WHO_AM_I);
-//        I2Ctwo.endTransmission();
         Wire1.beginTransmission(MPU_address);
         Wire1.write(MPU6050_WHO_AM_I);
         Wire1.endTransmission();
         spl("[initializeIMU] Send Who am I request to IMU...");
-//        I2Ctwo.requestFrom(MPU_address, 1);
         Wire1.requestFrom(MPU_address, 1);
-//        while(I2Ctwo.available() < 1); // Wait for reply from IMU slave on I2C bus                                     
-//        lowByte = I2Ctwo.read();
         while(Wire1.available() < 1); // Wait for reply from IMU slave on I2C bus                                     
         lowByte = Wire1.read();
         if(lowByte == MPU_address)
@@ -1477,11 +1296,6 @@ void initializeIMU()
                     tmsg = "[initializeIMU] Gyro calc countdown: " + String(tcnt2);
                     spl(tmsg);              
                 } //if
-//                I2Ctwo.beginTransmission(MPU_address); // Start communication with the gyro
-//                I2Ctwo.write(0x45); // Start reading the GYRO Y and Z registers
-//                I2Ctwo.endTransmission(); // End the transmission
-//                I2Ctwo.requestFrom(MPU_address, 4); // Request 2 bytes from the gyro
-//                temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes to make one integer, that could be negative
 
                 Wire1.beginTransmission(MPU_address); // Start communication with the gyro
 //                Wire1.write(0x45); // Start reading the GYRO Y and Z registers
@@ -1492,18 +1306,12 @@ void initializeIMU()
                 if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
 //                gyro_pitch_calibration_value += temp; // 16 bit Y value from gyro, accumulating in 32 bit variable, sign extended
                 gyro_roll_calibration_value += temp; // 16 bit Y value from gyro, accumulating in 32 bit variable, sign extended
-//                temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes to make one integer, that could be negative
                 temp = Wire1.read()<<8|Wire1.read(); // Combine the two bytes to make one integer, that could be negative
                 if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
 //                gyro_yaw_calibration_value += temp; // 16 bit Z value from gyro, accumulating in 32 bit variable, sign extended
                 gyro_pitch_calibration_value += temp; // 16 bit Z value from gyro, accumulating in 32 bit variable, sign extended
                 delay(20);
 
-//                I2Ctwo.beginTransmission(MPU_address); // Start communication with the IMU
-//                I2Ctwo.write(0x3F); // Get the MPU6050_ACCEL_ZOUT_H value
-//                I2Ctwo.endTransmission(); // End the transmission with the gyro
-//                I2Ctwo.requestFrom(MPU_address,2);
-//                temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Read the 16 bit number from IMU
                 Wire1.beginTransmission(MPU_address); // Start communication with the IMU
 //                Wire1.write(0x3F); // Get the MPU6050_ACCEL_ZOUT_H value
                 Wire1.write(0x3D); // Get the MPU6050_ACCEL_ZOUT_H value
@@ -1562,37 +1370,8 @@ void initializeIMU()
  ***********************************************************************************************************/
 void set_gyro_registers()
 {
-
     LINE("[set_gyro_registers] Configure the MPU6050. Source code line: ", __LINE__);
     spl("[set_gyro_registers] Wake up MPU"); // By default the MPU-6050 sleeps. So we have to wake it up.
-/*
-    I2Ctwo.beginTransmission(MPU_address); // Start communication with the address found during search.
-    I2Ctwo.write(0x6B); // We want to write to the PWR_MGMT_1 register (6B hex)
-    I2Ctwo.write(0x00); // Set the register bits as 00000000 to activate the gyro
-    I2Ctwo.endTransmission(); // End the transmission with the gyro.
-
-    // Set the full scale of the gyro to +/- 250 degrees per second
-    spl("[set_gyro_registers] Set the full scale of the gyro to +/- 250 degrees per second");
-    I2Ctwo.beginTransmission(MPU_address); // Start communication with the address found during search.
-    I2Ctwo.write(0x1B); // We want to write to the GYRO_CONFIG register (1B hex)
-    I2Ctwo.write(0x00); // Set the register bits as 00000000 (250dps full scale)
-    I2Ctwo.endTransmission(); // End the transmission with the gyro
-        
-    // Set the full scale of the accelerometer to +/- 4g.
-    spl("[set_gyro_registers] Set the full scale of the accelerometer to +/- 4g");
-    I2Ctwo.beginTransmission(MPU_address); // Start communication with the address found during search.
-    I2Ctwo.write(0x1C); // We want to write to the ACCEL_CONFIG register (1A hex)
-    I2Ctwo.write(0x08); // Set the register bits as 00001000 (+/- 4g full scale range)
-    I2Ctwo.endTransmission(); // End the transmission with the gyro
-
-    // Set some filtering to improve the raw data.
-    spl("[set_gyro_registers] Set Set Digital Low Pass Filter to ~43Hz to improve the raw data");
-    I2Ctwo.beginTransmission(MPU_address); // Start communication with the address found during search
-    I2Ctwo.write(0x1A); // We want to write to the CONFIG register (1A hex)
-    I2Ctwo.write(0x03); // Set the register bits as 00000011 (Set Digital Low Pass 
-                      // Filter to ~43Hz)
-    I2Ctwo.endTransmission(); // End the transmission with the gyro 
-*/
 
     Wire1.beginTransmission(MPU_address); // Start communication with the address found during search.
     Wire1.write(0x6B); // We want to write to the PWR_MGMT_1 register (6B hex)
@@ -1629,29 +1408,7 @@ void set_gyro_registers()
  ***********************************************************************************************************/
 void read_mpu_6050_data()                                              
 {
-
     LINE("[read_mpu_6050_data] Read MPU6050 registers. Source code line: ", __LINE__);
-/*
-    I2Ctwo.beginTransmission(MPU_address); // Start communicating with the MPU-6050
-    I2Ctwo.write(0x3B); // Send the requested starting register
-    I2Ctwo.endTransmission(); // End the transmission
-    I2Ctwo.requestFrom(MPU_address,14); // Request 14 bytes from the MPU-6050
-    while(I2Ctwo.available() < 14); // Wait until all the bytes are received
-    acc_x = I2Ctwo.read()<<8|I2Ctwo.read(); // Add the low and high byte to the acc_x variable
-    if(acc_x > 32767) acc_x = acc_x - 65536; // if it's really a negative number, fix it
-    acc_y = I2Ctwo.read()<<8|I2Ctwo.read(); // Add the low and high byte to the acc_y variable
-    if(acc_y > 32767) acc_y = acc_y - 65536; // if it's really a negative number, fix it
-    acc_z = I2Ctwo.read()<<8|I2Ctwo.read(); // Add the low and high byte to the acc_z variable
-    if(acc_z > 32767) acc_z = acc_z - 65536; // if it's really a negative number, fix it
-    temperature = I2Ctwo.read()<<8|I2Ctwo.read(); // Add the low and high byte to the temperature variable
-    if(temperature > 32767) temperature = temperature - 65536; // if it's really a negative number, fix it
-    gyro_x = I2Ctwo.read()<<8|I2Ctwo.read(); // Add the low and high byte to the gyro_x variable
-    if(gyro_x > 32767) gyro_x = gyro_x - 65536; // if it's really a negative number, fix it
-    gyro_y = I2Ctwo.read()<<8|I2Ctwo.read(); // Add the low and high byte to the gyro_y variable
-    if(gyro_y > 32767) gyro_y = gyro_y - 65536; // if it's really a negative number, fix it
-    gyro_z = I2Ctwo.read()<<8|I2Ctwo.read(); // Add the low and high byte to the gyro_z variable
-    if(gyro_z > 32767) gyro_z = gyro_z - 65536; // if it's really a negative number, fix it
-*/
     Wire1.beginTransmission(MPU_address); // Start communicating with the MPU-6050
     Wire1.write(0x3B); // Send the requested starting register
     Wire1.endTransmission(); // End the transmission
@@ -1679,7 +1436,6 @@ void read_mpu_6050_data()
  ***********************************************************************************************************/
 void startTimer0()
 {
-
     LINE("[startTimer0] Initialize and start timer0. Source code line: ", __LINE__);
     timer0 = timerBegin(timer_number_0, timer_prescaler_0, timer_cnt_up); // Pointer to hardware timer 0
     timerAttachInterrupt(timer0, &onTimer0, true); // Bind onTimer function to hardware timer 0
@@ -1695,7 +1451,6 @@ void startTimer0()
  ***********************************************************************************************************/
 void initializeMotorControllers()
 {
-  
     LINE("[initializeMotorControllers] Set up GPIO pins connected to motors. Source code line: ", __LINE__);
     pinMode(pin_left_dir,OUTPUT); // Note that our motor control pins are Outputs
     pinMode(pin_left_step,OUTPUT);
@@ -1713,7 +1468,6 @@ void initializeMotorControllers()
  ***********************************************************************************************************/
 void setup() 
 {
-
     Serial.begin(115200); // Open a serial connection at 115200bps
     Serial.println("");
     LINE("[setup] Start of sketch. Source code line: ", __LINE__);
@@ -1785,7 +1539,6 @@ void setup()
  ***********************************************************************************************************/
 void monitorWebsocket(void * parameter) 
 {
-
     while(1)
     {
         webSocket.loop(); // Poll for websocket client events
@@ -1802,7 +1555,6 @@ void monitorWebsocket(void * parameter)
  ***********************************************************************************************************/
 void monitorWeb(void * parameter) 
 {
-
     while(1)
     {
         server.handleClient(); // Poll for web server client
@@ -1819,7 +1571,6 @@ void monitorWeb(void * parameter)
 //void balanceRobot(void * parameter)
 void balanceRobot()
 {
-
    //while(1)
    //{
 
@@ -1843,13 +1594,7 @@ void balanceRobot()
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         // angle calculations   
         //////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-        I2Ctwo.beginTransmission(MPU_address); // Start communication with the gyro
-        I2Ctwo.write(0x3F); // Start reading at register 3F (ACCEL_ZOUT_H)
-        I2Ctwo.endTransmission(); // End the transmission
-        I2Ctwo.requestFrom(MPU_address, 2); // Request 2 bytes from the gyro
-        temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes to make one integer
-*/
+
         Wire1.beginTransmission(MPU_address); // Start communication with the gyro
 //        Wire1.write(0x3F); // Start reading at register 3F (ACCEL_ZOUT_H)
         Wire1.write(0x3D); // Start reading at register 3D (ACCEL_YOUT_H)
@@ -1871,16 +1616,7 @@ void balanceRobot()
             angle_gyro = angle_acc; // Load the accelerometer angle in the angle_gyro variable
             start = 1;                             // Set the start variable to start the PID controller
         } //if
-/*
-        I2Ctwo.beginTransmission(MPU_address); // Start communication with the gyro
-        I2Ctwo.write(0x43); // Start reading at register 43
-        I2Ctwo.endTransmission(); // End the transmission
-        I2Ctwo.requestFrom(MPU_address, 4); // Request 4 bytes from the gyro
-        temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes read to make one 16 bit signed integer
-        if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
-        gyro_yaw_data_raw = temp; // and use result as raw data, which is yaw degrees/sec * 65.5
-        temp = I2Ctwo.read()<<8|I2Ctwo.read(); // Combine the two bytes read to make one 16 bit signed integer
-*/
+
         Wire1.beginTransmission(MPU_address); // Start communication with the gyro
 //        Wire1.write(0x43); // Start reading at register 43
         Wire1.write(0x45); // Start reading at register 45
