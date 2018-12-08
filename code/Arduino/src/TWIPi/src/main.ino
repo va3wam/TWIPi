@@ -31,7 +31,7 @@
   History
   Version YYYY-MM-DD Description
 */   
-  String my_ver = "2.2.3";
+  String my_ver = "2.2.4";
 /*  char my_ver[] = "2.2.1"; // Semantic Versioning (https://semver.org/)
 
     Given a version number MAJOR.MINOR.PATCH, increment the:
@@ -40,8 +40,10 @@
       PATCH version when you make backwards-compatible bug fixes.
 
   ------- ---------- ---------------------------------------------------------------------------------------
+  2.2.4   2018-12-07 -recognize Doug's WiFi so boot up doesn't stall
+          -fic esp32-hal-i2c.c in Doug's PlatformIO library to get timer0 interrupts to work for code from his PC
   2.2.3   2018-12-06 -recode the embedded web server html string so the compiler won't give errors
-          -change string output in
+          -change string output in process_Client_JSON_msg to avoid compile errors
           -remove obsolete commented out code (can still be retrieved from previous versions)
   2.2.2   2018-11-28 Changed reference to Gyro and accelerometer sensors to jive with the new IMU 
           orientation inside the robot's chasis. X (roll) has become Y (pitch), Y (pitch) has become Z (Yaw).
@@ -225,6 +227,9 @@ static const char ssid1[]= "MN_WORKSHOP_2.4GHz"; // The name of a WiFi network A
 static const char ssid2[] = "MN_DS_OFFICE_2.4GHz"; // The name of a WiFi network AP to connect to
 static const char ssid3[] = "MN_OUTSIDE"; // The name of a WiFi network AP to connect to
 static const char password[] = "5194741299"; // The password for all of the WiFi network APs
+static const char ssid4[] = "borfpiggle"; // The name of Doug's WiFi network AP to connect to
+static const char password4[] = "de15ab00be"; // The password for Doug's WiFi network AP
+
 MDNSResponder mdns; // DNS Service Discovery object used for client handshaking
 static const char *wsEvent[] = { "WStype_DISCONNECTED", "WStype_CONNECTED", "WStype_TEXT", "WStype_BIN"};
 
@@ -624,6 +629,7 @@ void startWiFi()
     wifiMulti.addAP(ssid1, password); // Add Wi-Fi AP we may be able to connect to
     wifiMulti.addAP(ssid2, password); // Add Wi-Fi AP we may be able to connect to
     wifiMulti.addAP(ssid3, password); // Add Wi-Fi AP we may be able to connect to
+    wifiMulti.addAP(ssid4, password4); // Add Wi-Fi AP we may be able to connect to - Doug's WiFi
     spl("[startWiFi] Connecting Wifi"); 
     sp(wifiMulti.run());
     while(wifiMulti.run() != WL_CONNECTED) 
