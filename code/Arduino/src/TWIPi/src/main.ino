@@ -31,7 +31,7 @@
   History
   Version YYYY-MM-DD Description
 */   
-  String my_ver = "2.2.4";
+  String my_ver = "2.2.6";
 /*  char my_ver[] = "2.2.1"; // Semantic Versioning (https://semver.org/)
 
     Given a version number MAJOR.MINOR.PATCH, increment the:
@@ -40,6 +40,8 @@
       PATCH version when you make backwards-compatible bug fixes.
 
   ------- ---------- ---------------------------------------------------------------------------------------
+  2.2.6   2018-12-09 -reduce time spent in boot sequence
+  2.2.5   2018-12-08 -add 6 degree compensation for IMU mounting error
   2.2.4   2018-12-07 -recognize Doug's WiFi so boot up doesn't stall
           -fic esp32-hal-i2c.c in Doug's PlatformIO library to get timer0 interrupts to work for code from his PC
   2.2.3   2018-12-06 -recode the embedded web server html string so the compiler won't give errors
@@ -573,7 +575,7 @@ void scrollLCD(String LCDmsg, byte LCDline)
 void flashLCD()   
 {
     LINE("[flashLCD] Flashing back light of LCD. Source code line: ", __LINE__);
-    for (byte cnt = 0; cnt < 10; cnt++) 
+    for (byte cnt = 0; cnt < 4; cnt++)      // max was 10, but sped it up
     {
         lcd.backlight(); // Turn on the LCD backlight
         delay(100);
@@ -635,7 +637,7 @@ void startWiFi()
     while(wifiMulti.run() != WL_CONNECTED) 
     {                                                               
         sp(".\r"); // Send dot to console terminal to show the waiting process is active
-        delay(100); // Wait a little before trying again
+        delay(20); // Wait a little before trying again // was 100 msec, but sped it up
     } // while
     spl("");                                             
     sp("[startWiFi] Connected to Access Point ");                                        
@@ -1015,7 +1017,7 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
 } //process_Client_JSON_msg()
 
 /*************************************************************************************************************************************
- This function is used to test roung trip timing of messages to the client.    
+ This function is used to test round trip timing of messages to the client.    
  *************************************************************************************************************************************/
 void sendClientPing(uint8_t num)
 {
@@ -1277,17 +1279,17 @@ void initializeIMU()
         lowByte = Wire1.read();
         if(lowByte == MPU_address)
         {    
-            sp("[initializeIMU] Who Am I responce is ok: 0x");
+            sp("[initializeIMU] Who Am I response is ok: 0x");
             spl(lowByte, HEX);        
             spl("[initializeIMU] Set up the Gyro registers in the IMU");
             set_gyro_registers();
             spl("[initializeIMU] Gyro started and configured");
-            spl("[initializeIMU] Wait 10 seconds to allow MPU to settle down");
-            for(int x=10; x > 1; x--)
+            spl("[initializeIMU] Wait 5 seconds to allow MPU to settle down");
+            for(int x=5; x > 1; x--)
             {
                 tmsg = "[initializeIMU] Delay countdown: " + String(x);
                 spl(tmsg);
-                delay(1000);
+                delay(1000);                // just passing time while IMU warms up
             } //for
             read_mpu_6050_data(); // Read MPU registers                
             spl("[initializeIMU] Create Gyro pitch and yaw offset values by averaging 500 sensor readings...");
@@ -1316,7 +1318,7 @@ void initializeIMU()
                 if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
 //                gyro_yaw_calibration_value += temp; // 16 bit Z value from gyro, accumulating in 32 bit variable, sign extended
                 gyro_pitch_calibration_value += temp; // 16 bit Z value from gyro, accumulating in 32 bit variable, sign extended
-                delay(20);
+                delay(2);                              // delay was 20, but sped it up
 
                 Wire1.beginTransmission(MPU_address); // Start communication with the IMU
 //                Wire1.write(0x3F); // Get the MPU6050_ACCEL_ZOUT_H value
@@ -1327,7 +1329,7 @@ void initializeIMU()
 
                 if(temp > 32767) temp = temp - 65536; // If it's really a negative number, fix it
                 balance_calibration_value += temp; // 16 bit Z value from accelerometer, accumulating in 32 bit variable, sign extended
-                delay(20);           
+                delay(2);                           // delay was 20, but sped it up
             } //for   
             if(gyro_roll_calibration_value == -500 && 
                 gyro_pitch_calibration_value == -500) // If calibration numbers are characteristically weird
@@ -1482,11 +1484,11 @@ void setup()
     writeLED(false); // Turn onboard LED off
     display_Running_Sketch(); // Show environment details in console
 //    Serial.setDebugOutput(true); // http://esp8266.github.io/Arduino/versions/2.0.0/doc/reference.html
-    for(uint8_t t = 4; t > 0; t--) // Allow time for ESP32 serial to initialize 
+    for(uint8_t t = 1; t > 0; t--) // Allow time for ESP32 serial to initialize // was 4 loops, but sped it up
     {
         spf("[setup] Boot wait %d...\r\n", t); // Count down message to console
         Serial.flush(); // Wait for message to clear buffer
-        delay(1000); // Allow time to pass
+        delay(200); // Allow time to pass   // was 1000 msec/loop, but sped it up
     } //for   
     startI2Cone(); // Scan the first I2C bus for LCD
     startI2Ctwo(); // Scan the second I2C bus for MPU   AM: This is the issue
@@ -1665,6 +1667,8 @@ void balanceRobot()
         // variable is automatically changed to make sure that the robot stays balanced all the time. The 
         // (pid_setpoint - pid_output * 0.015) part functions as a brake function.
         //////////////////////////////////////////////////////////////////////////////////////////////////////
+// 6 degree comp[ensation for twipi's weird IMU orientation
+        angle_gyro += 6 ;                        // twipi's leaning backwards 6 degrees when IMU says 0        
         pid_error_temp = angle_gyro - self_balance_pid_setpoint - pid_setpoint;
         if(pid_output > 10 || pid_output < -10)pid_error_temp += pid_output * 0.015;
         //try to reduce longevity of pid_i_mem, which gets big, and stays big
