@@ -40,7 +40,23 @@
       PATCH version when you make backwards-compatible bug fixes.
 
   ------- ---------- ---------------------------------------------------------------------------------------
-  2.2.6   2018-12-09 -reduce time spent in boot sequence
+  2.2.6   2018-12-09 -reduce time spent in boot sequence from 42 to 13 seconds (to IP address display)
+          -note for bot specific calibration purposes, original TWIPi has MAC address: 30:ae:a4:37:54:f8
+          -remove 6 degree compensation after IMU fell off header during re-assembly
+          -disable pid I memory fading
+          -un-comment the setting of pid_i_mem. It was never being used our PID was actually PD.
+          -now TWIPi's hyper reactive. reducing gain parameters. Originally 30, 1.5, 30
+          -10, 1.2, 10: still seems to get into an oscillation. robot's right wheel making funny noises, even idle
+          -bot_fast changed from 250 to 300, guessing oscillation is driving motors too fast
+          -still getting oscillation at fast=400, but not at 500. 
+          -some trace capability at 4 Msec level would really help, but difficult to capture
+          -options to troubleshoot wheel noise:
+              -swap position of DRV8825 & see if it changes wheels
+              -swap stepper motors
+              -scope out the control and power lines for that motor
+              -use different GPIO's for step and dir on that wheel (hardware challenge)
+              -try motors on a bench / breadboard system & see if problem can be reproduced, fixed...
+          -doesn't seem to be IMU, but could undo boot speed up changes to see if it makes a difference
   2.2.5   2018-12-08 -add 6 degree compensation for IMU mounting error
   2.2.4   2018-12-07 -recognize Doug's WiFi so boot up doesn't stall
           -fic esp32-hal-i2c.c in Doug's PlatformIO library to get timer0 interrupts to work for code from his PC
@@ -153,14 +169,15 @@ const volatile int speed = -1; // for initial testing of interrupt driven steppe
                                // speed = n enables fixed forward speed interval of n, 0 
                                // is brakes on
 const int bot_slow = 2300; // # of interrupts between steps at slowest workable bot speed
-const int bot_fast = 250; // # of interrupts between steps at fastest workable bot speed
+const int bot_fast = 500; // # of interrupts between steps at fastest workable bot speed
 const float PID_I_fade = .80; // How much of pid_i_mem history to retain
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Various PID settings
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float pid_p_gain = 30; // Gain setting for the P-controller (15)
-float pid_i_gain = 1.2; // Gain setting for the I-controller (1.5)
-float pid_d_gain = 30; // Gain setting for the D-controller (30)
+// was 30, 1.2, 30 before 2018-12-10
+float pid_p_gain = 10; // Gain setting for the P-controller (15)
+float pid_i_gain = 0.1; // Gain setting for the I-controller (1.5)
+float pid_d_gain = 10; // Gain setting for the D-controller (30)
 float turning_speed = 30; // Turning speed (20)
 float max_target_speed = 150; // Max target speed (100)
 const long usec_per_t0_int = 20; // Number of microseconds between t0 timer interrupts
@@ -1667,16 +1684,15 @@ void balanceRobot()
         // variable is automatically changed to make sure that the robot stays balanced all the time. The 
         // (pid_setpoint - pid_output * 0.015) part functions as a brake function.
         //////////////////////////////////////////////////////////////////////////////////////////////////////
-// 6 degree comp[ensation for twipi's weird IMU orientation
-        angle_gyro += 6 ;                        // twipi's leaning backwards 6 degrees when IMU says 0        
+   
         pid_error_temp = angle_gyro - self_balance_pid_setpoint - pid_setpoint;
         if(pid_output > 10 || pid_output < -10)pid_error_temp += pid_output * 0.015;
         //try to reduce longevity of pid_i_mem, which gets big, and stays big
-        //pid_i_mem += pid_i_gain * pid_error_temp; // Calculate the I-controller value and add it to the  
+        pid_i_mem += pid_i_gain * pid_error_temp; // Calculate the I-controller value and add it to the  
                                                     // pid_i_mem variable
         temp = pid_i_gain * pid_error_temp; // current I controller value
         hold2 = pid_i_mem; // grab it for debugging before it gets changed
-        pid_i_mem =temp + PID_I_fade * pid_i_mem; // allow impact of past pid_i_mem history to fade out over time
+//        pid_i_mem =temp + PID_I_fade * pid_i_mem; // allow impact of past pid_i_mem history to fade out over time
         if(pid_i_mem > pid_max)pid_i_mem = pid_max; // Limit the I-controller to the parameterized maximum  
                                                     // controller output
         else if(pid_i_mem < pid_min)pid_i_mem = pid_min;
@@ -1806,9 +1822,14 @@ void balanceRobot()
         {
             i = 0; // prepare to count up to next second
             float dtmp = angle_gyro; // temp cheat to help tune balance point
-            spd("--pid_error_temp= ",pid_error_temp); spd("  angle_gyro= ",angle_gyro); spd("  dtmp= ",dtmp); spd(" start= ",start);
-            spd("  throttle_left_motor= ",throttle_left_motor); spd("  left_motor= ",left_motor); spl(); 
-            spd("t0_per_sec = ", t0_per_sec);  spl();  
+            spd("--pid_error_temp= ",pid_error_temp); spd("  angle_gyro= ",angle_gyro); 
+//            spd("  dtmp= ",dtmp); 
+            spd(" start= ",start);
+//            spd("  throttle_left_motor= ",throttle_left_motor); 
+            spd("  left_motor= ",left_motor); 
+            spd("  pid_i_mem= ",pid_i_mem);
+            spl(); 
+ //           spd("t0_per_sec = ", t0_per_sec); spl();  
             noInterrupts(); // ensure interrupt can't happen when updating ISR varaible
             t0_per_sec = 0;  
             interrupts(); // Re-enable interrupts
