@@ -31,7 +31,7 @@
   History
   Version YYYY-MM-DD Description
 */   
-  String my_ver = "2.2.6";
+  String my_ver = "2.2.7";
 /*  char my_ver[] = "2.2.1"; // Semantic Versioning (https://semver.org/)
 
     Given a version number MAJOR.MINOR.PATCH, increment the:
@@ -40,6 +40,9 @@
       PATCH version when you make backwards-compatible bug fixes.
 
   ------- ---------- ---------------------------------------------------------------------------------------
+  2.2.7   2018-12-11 -add crude compensation for both gyro and accel angle measurements, because reading were off
+          by 9 degees. also, gyro and accel don't agree - off by about 1.5 degrees
+          -change bot fast speed control from 250 to 300 due to stalling motors
   2.2.6   2018-12-09 -reduce time spent in boot sequence from 42 to 13 seconds (to IP address display)
           -note for bot specific calibration purposes, original TWIPi has MAC address: 30:ae:a4:37:54:f8
           -remove 6 degree compensation after IMU fell off header during re-assembly
@@ -56,6 +59,7 @@
               -scope out the control and power lines for that motor
               -use different GPIO's for step and dir on that wheel (hardware challenge)
               -try motors on a bench / breadboard system & see if problem can be reproduced, fixed...
+              -research flakey GPio performance due to hidden Espressif activity
           -doesn't seem to be IMU, but could undo boot speed up changes to see if it makes a difference
   2.2.5   2018-12-08 -add 6 degree compensation for IMU mounting error
   2.2.4   2018-12-07 -recognize Doug's WiFi so boot up doesn't stall
@@ -169,15 +173,16 @@ const volatile int speed = -1; // for initial testing of interrupt driven steppe
                                // speed = n enables fixed forward speed interval of n, 0 
                                // is brakes on
 const int bot_slow = 2300; // # of interrupts between steps at slowest workable bot speed
-const int bot_fast = 500; // # of interrupts between steps at fastest workable bot speed
+const int bot_fast = 300; // # of interrupts between steps at fastest workable bot speed
 const float PID_I_fade = .80; // How much of pid_i_mem history to retain
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Various PID settings
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // was 30, 1.2, 30 before 2018-12-10
-float pid_p_gain = 10; // Gain setting for the P-controller (15)
-float pid_i_gain = 0.1; // Gain setting for the I-controller (1.5)
-float pid_d_gain = 10; // Gain setting for the D-controller (30)
+// back to above 2018-12-11
+float pid_p_gain = 30; // Gain setting for the P-controller (15)
+float pid_i_gain = 1.2; // Gain setting for the I-controller (1.5)
+float pid_d_gain = 30; // Gain setting for the D-controller (30)
 float turning_speed = 30; // Turning speed (20)
 float max_target_speed = 150; // Max target speed (100)
 const long usec_per_t0_int = 20; // Number of microseconds between t0 timer interrupts
@@ -1469,7 +1474,7 @@ void startTimer0()
     yield();  //This yield was mentioned as a way to fix uissues starting timer multiple times                                        
     timerAlarmEnable(timer0); // Enable hardware timer 0
 
-} //startISR()
+} //startTimer0()
 
 /***********************************************************************************************************
  Setup for A4988 motor controllers
@@ -1634,12 +1639,13 @@ void balanceRobot()
                                                                         // limiting the acc data to +/-8200;
         if(accelerometer_data_raw < -8192)accelerometer_data_raw = -8192; // Prevent division by zero by 
                                                                         // limiting the acc data to +/-8200;
-        angle_acc = asin((float)accelerometer_data_raw/8192.0)* 57.296; // Calculate the current angle 
+// crude fix adding 8 degress in next line                                                                        
+        angle_acc = asin((float)accelerometer_data_raw/8192.0)* 57.296 + 8; // Calculate the current angle 
                                                                         // according to the accelerometer
         if(start == 0 && angle_acc > -0.5&& angle_acc < 0.5) // If the accelerometer angle is almost 0
         {
-            angle_gyro = angle_acc; // Load the accelerometer angle in the angle_gyro variable
-            start = 1;                             // Set the start variable to start the PID controller
+            angle_gyro = angle_acc;                 // Load the accelerometer angle in the angle_gyro variable
+            start = 1;                              // Set the start variable to start the PID controller
         } //if
 
         Wire1.beginTransmission(MPU_address); // Start communication with the gyro
@@ -1673,7 +1679,7 @@ void balanceRobot()
         // Uncomment the following line to make the compensation active
         // re-comment the line below to see if angle calibration gets more accurate
 //        angle_gyro -= gyro_yaw_data_raw * 0.0000003; // Compensate the gyro offset when the robot is rotating
-        angle_gyro += gyro_pitch_data_raw * 0.0000003; // Compensate the gyro offset when the robot is rotating
+//        angle_gyro += gyro_pitch_data_raw * 0.0000003; // Compensate the gyro offset when the robot is rotating
         //angle_gyro = angle_gyro * 0.9996 + angle_acc * 0.0004; // Correct the drift of the gyro angle with 
                                                                  // the accelerometer angle
         angle_gyro = angle_gyro * 0.996 + angle_acc * 0.004; // Correct the drift of the gyro angle with the 
@@ -1688,7 +1694,7 @@ void balanceRobot()
         pid_error_temp = angle_gyro - self_balance_pid_setpoint - pid_setpoint;
         if(pid_output > 10 || pid_output < -10)pid_error_temp += pid_output * 0.015;
         //try to reduce longevity of pid_i_mem, which gets big, and stays big
-        pid_i_mem += pid_i_gain * pid_error_temp; // Calculate the I-controller value and add it to the  
+//        pid_i_mem += pid_i_gain * pid_error_temp; // Calculate the I-controller value and add it to the  
                                                     // pid_i_mem variable
         temp = pid_i_gain * pid_error_temp; // current I controller value
         hold2 = pid_i_mem; // grab it for debugging before it gets changed
@@ -1802,6 +1808,9 @@ void balanceRobot()
         else if(pid_output_right < 0)right_motor = -bot_slow - (pid_output_right/400)*(bot_slow - bot_fast);
         else right_motor = 0;
         //Copy the pulse time to the throttle variables so the interrupt subroutine can use them
+//        left_motor *= -1;            //reverse the direction on TWIPi
+//        right_motor *= -1;           // for both wheels
+          
         if (speed >= 0) // if we're overriding IMU to force a constant test speed
         {
             noInterrupts(); // ensure interrupt can't happen when only one wheel is updated
@@ -1821,15 +1830,17 @@ void balanceRobot()
         if (i++ > 250) // if a full second has passed, display debug info
         {
             i = 0; // prepare to count up to next second
-            float dtmp = angle_gyro; // temp cheat to help tune balance point
+//            float dtmp = angle_gyro; // temp cheat to help tune balance point
             spd("--pid_error_temp= ",pid_error_temp); spd("  angle_gyro= ",angle_gyro); 
 //            spd("  dtmp= ",dtmp); 
             spd(" start= ",start);
 //            spd("  throttle_left_motor= ",throttle_left_motor); 
             spd("  left_motor= ",left_motor); 
             spd("  pid_i_mem= ",pid_i_mem);
+            spd("  angle_acc= ",angle_acc);
             spl(); 
  //           spd("t0_per_sec = ", t0_per_sec); spl();  
+            sendLCD(String(angle_gyro),1);
             noInterrupts(); // ensure interrupt can't happen when updating ISR varaible
             t0_per_sec = 0;  
             interrupts(); // Re-enable interrupts
