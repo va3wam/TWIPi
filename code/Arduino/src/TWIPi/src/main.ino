@@ -150,6 +150,11 @@ volatile long cntTimer0;
 volatile long t0_per_sec; 
 
 /***********************************************************************************************************
+ Define telemetry debug related variables
+ ***********************************************************************************************************/
+bool telClientConnected = false;  
+
+/***********************************************************************************************************
  Define FreeRTOS task variables and objects
  ***********************************************************************************************************/
 TaskHandle_t monWebSocket; // Handle for task that monitors webSockets
@@ -781,14 +786,18 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
     {
         case WStype_DISCONNECTED: // Client disconnect event
             spf("[webSocketEvent] Client NUM [%u] disconnected\r\n", num);
+            telClientConnected = false;
+            writeLED(telClientConnected);
             break;
         case WStype_CONNECTED: // Client connect event
         {
             IPAddress ip = webSocket.remoteIP(num);
+            telClientConnected = true;
+            writeLED(telClientConnected);
             spf("[webSocketEvent] [%u] Connected from %d.%d.%d.%d url: %s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-            sendClientLEDState(num); // Send new client state of onboard LED
-            sendClientLCDState(num); // Send new client text displayed on LCD
-            sendClientVariableValue(num,"PID"); // Send new client PID tuning values
+//            sendClientLEDState(num); // Send new client state of onboard LED
+//            sendClientLCDState(num); // Send new client text displayed on LCD
+//            sendClientVariableValue(num,"PID"); // Send new client PID tuning values
 //            sendClientPing(num); // Send new client a ping message (test only)
         } //case
             break;                                                   
@@ -1118,6 +1127,21 @@ void sendClientLCDState(uint8_t num)
    } //else
 
 } //sendClientLCDState()
+
+/*************************************************************************************************************************************
+ THis function sends an array of characters to the websocket
+ *************************************************************************************************************************************/
+void reportTel(String msg)
+{
+    if(telClientConnected)
+    {
+        webSocket.broadcastTXT(msg); // Send payload data to all connected clients
+    } //if
+    else
+    {
+        //Serial.println("[reportTel] Cannot send telemetry, no connected client");
+    } //else
+} //reportTel()
 
 /*************************************************************************************************************************************
  This function calculates data that can be used to assess how well the robot is balancing and sends data to the client in order to 
@@ -1829,6 +1853,10 @@ void balanceRobot()
         //count 4 millesecond loops to get to a second, and dump debug info once a second
         if (i++ > 250) // if a full second has passed, display debug info
         {
+            String sTMP = String(left_motor) + ","; // Variable that will hold data to send
+            sTMP += String(pid_i_mem) + ","; // Append data you want to send
+            sTMP += String(angle_acc); // Append data you want to send
+            reportTel(sTMP); // Example of how to send telemetry 
             i = 0; // prepare to count up to next second
 //            float dtmp = angle_gyro; // temp cheat to help tune balance point
             spd("--pid_error_temp= ",pid_error_temp); spd("  angle_gyro= ",angle_gyro); 
@@ -1840,7 +1868,7 @@ void balanceRobot()
             spd("  angle_acc= ",angle_acc);
             spl(); 
  //           spd("t0_per_sec = ", t0_per_sec); spl();  
-            sendLCD(String(angle_gyro),1);
+            sendLCD(String(angle_gyro),1);           
             noInterrupts(); // ensure interrupt can't happen when updating ISR varaible
             t0_per_sec = 0;  
             interrupts(); // Re-enable interrupts

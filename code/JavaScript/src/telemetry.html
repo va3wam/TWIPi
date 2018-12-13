@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+   <html>
+      <head>
+         <meta charset="UTF-8">
+         <title>TWIPi JS WebSocket Client</title>
+         <script type="text/javascript">
+         ///////////////////////////////////////////////////////////////////////////////
+         // This script is used to record telemetry data sent by the TWIPi robot.   
+         // Script inspired by: 
+         // https://dzone.com/articles/sample-java-web-socket-client (websockets)
+         // https://stackabuse.com/writing-to-files-in-node-js/ (WriteStream)
+         ///////////////////////////////////////////////////////////////////////////////
+            var recordingStatus = "OFF";
+            var currentdate = new Date();
+            var fileName = "NULL"; 
+            var path = document.location.pathname;
+            var directory = path.substring(path.indexOf('/'), path.lastIndexOf('/'));            
+            var wsocket; 
+            var numLines=0;
+            
+            ////////////////////////////////////////////////////////////////////////////
+            // This function runs when any windows event occurs. The assumption here is 
+            // that a websocket connection is the only event that will fire.
+            ////////////////////////////////////////////////////////////////////////////
+            function connect() 
+            {         
+               console.log("[connect] Connecting to TWIPi");
+               wsocket = new WebSocket("ws://192.168.2.70:81");  
+               wsocket.onmessage = onMessage; 
+               document.getElementById("fileName").innerHTML = fileName;     
+               document.getElementById("directory").innerHTML = directory;     
+            } //connect()
+
+            ////////////////////////////////////////////////////////////////////////////
+            // This function writes incoming telemetry data to the web page as well as
+            // to a local file if called for.
+            ////////////////////////////////////////////////////////////////////////////
+            function onMessage(evt) 
+            {             
+            //   console.log("[onMessage] Writing incoming telemetry to page");
+               var myData = evt.data;
+               document.getElementById("telDATA").innerHTML=myData; 
+               document.getElementById('numLines').innerHTML=numLines;
+               if(document.getElementById('recStatus').innerHTML=="ON") //If recording 
+               {
+                  numLines++;
+                  writeStream.write(myData, 'base64'); // Look up other format options
+               } //if
+            } // onMessage()
+
+            ////////////////////////////////////////////////////////////////////////////
+            // This function toggles the recording of telemetry data on and off when 
+            // the statusClick TD object is clicked. 
+            ////////////////////////////////////////////////////////////////////////////
+            function toggleREC(evt) 
+            {             
+               console.log("[toggleREC] Toggling recording");
+               if(document.getElementById('recStatus').innerHTML=="OFF") // Start recording
+               {
+                  document.getElementById('recStatus').style.backgroundColor="#00ff00";
+                  document.getElementById('recStatus').innerHTML="ON";
+                  fileName = " " 
+                     + currentdate.getFullYear()  // Get the year as a four digit number
+                     + (currentdate.getMonth()+1) // Get the month as a number (0-11)
+                     + currentdate.getDate()      // Get the day as a number (1-31)
+                     + currentdate.getHours()     // Get the hour (0-23)
+                     + currentdate.getMinutes()   // Get the minute (0-59) 
+                     + currentdate.getSeconds()   // Get the second (0-59)
+                     + ".csv";                    // append .csv to file name 
+                  document.getElementById("fileName").innerHTML = fileName; // File name
+                  numLines=0; // Reset file line count
+                  let writeStream = fs.createWriteStream(fileName); // Open file
+               } //if
+               else // Stop recording
+               {
+                  document.getElementById('recStatus').style.backgroundColor="#ff0000";
+                  document.getElementById('recStatus').innerHTML="OFF";
+                  writeStream.end(); // Close file 
+               } //else
+            } // toggleREC()
+
+            window.addEventListener("load", connect, false); // Function to run when page loads is called connect
+         </script>
+      </head>
+      <body>
+         <h1>TWIPi Telemetry JS Client</h1>
+         <h2>About</h2>
+         This is a websocket client written in JavaScript. It reads telemetry data from the TWIPi robot and writes
+         that data to a local file. You run this client by opening telemetry.html in your browser. It is assumed that
+         the TWIPi robot has an IP address of 192.168.2.70:81 (81 being the webscoket service port). 
+         <h2>Instructions</h2>
+         <UL>
+            <LI>
+               TWIPi detects when there is a connected client and begins transmitting telemetry data automatically. 
+            </LI> 
+            <LI>
+               This page connects to TWIPi and starts diplaying incoming telemetry data immediately.                
+            </LI> 
+            <LI>
+               Telemetry data is NOT recorded unless specifically requested by you.                
+            </LI>    
+            <LI>
+               The Recording Status button (below) toggles telemetry recording ON/OFF.
+            </LI> 
+            <LI>   
+               Telemetry data is stored in the directory and file name indicated in the telemetry recording details 
+               section below. NOTE that the file name shows the current/last recording file name.
+            </LI> 
+         </UL>
+         <h2>Telemetry Recording Details</h2>
+         <table border=1>
+            <tr>
+               <td bgcolor="#fcfa94">File directory</td>
+               <td><span id="directory"></span></td>
+            </tr>
+         </table>
+         <table border=1>
+            <tr>
+               <td bgcolor="#fcfa94">File Name</td>
+               <td><span id="fileName"></span></td>
+            </tr>
+            <tr>
+               <td bgcolor="#fcfa94">Recording Status</td>
+               <td bgcolor="#ff0000" align="center" onclick='toggleREC();'><label id="recStatus">OFF</label></td>
+            </tr>
+            <tr>
+                  <td bgcolor="#fcfa94">Lines in file</td>
+                  <td><label id="numLines">0</label></td>
+            </tr>   
+            <tr>
+               <td bgcolor="#fcfa94">Last Data Recieved</td>
+               <td><label id="telDATA">NULL</label></td>
+            </tr>
+         </table>
+      </body>
+   </html>
