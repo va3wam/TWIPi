@@ -39,12 +39,21 @@
             {             
             //   console.log("[onMessage] Writing incoming telemetry to page");
                var myData = evt.data;
-               document.getElementById("telDATA").innerHTML=myData; 
-               document.getElementById('numLines').innerHTML=numLines;
+               var tmp;
                if(document.getElementById('recStatus').innerHTML=="ON") //If recording 
                {
                   numLines++;
-                  writeStream.write(myData, 'base64'); // Look up other format options
+                  document.getElementById('numLines').innerHTML=numLines;                  
+                  document.getElementById("telDATA09").innerHTML=document.getElementById("telDATA08").innerHTML; 
+                  document.getElementById("telDATA08").innerHTML=document.getElementById("telDATA07").innerHTML; 
+                  document.getElementById("telDATA07").innerHTML=document.getElementById("telDATA06").innerHTML; 
+                  document.getElementById("telDATA06").innerHTML=document.getElementById("telDATA05").innerHTML; 
+                  document.getElementById("telDATA05").innerHTML=document.getElementById("telDATA04").innerHTML; 
+                  document.getElementById("telDATA04").innerHTML=document.getElementById("telDATA03").innerHTML; 
+                  document.getElementById("telDATA03").innerHTML=document.getElementById("telDATA02").innerHTML; 
+                  document.getElementById("telDATA02").innerHTML=document.getElementById("telDATA01").innerHTML; 
+                  document.getElementById("telDATA01").innerHTML=document.getElementById("telDATA00").innerHTML; 
+                  document.getElementById("telDATA00").innerHTML=myData; 
                } //if
             } // onMessage()
 
@@ -69,13 +78,22 @@
                      + ".csv";                    // append .csv to file name 
                   document.getElementById("fileName").innerHTML = fileName; // File name
                   numLines=0; // Reset file line count
-                  let writeStream = fs.createWriteStream(fileName); // Open file
+                  document.getElementById('numLines').innerHTML=numLines;              
+                  document.getElementById("telDATA00").innerHTML="NULL"; 
+                  document.getElementById("telDATA01").innerHTML="NULL"; 
+                  document.getElementById("telDATA02").innerHTML="NULL"; 
+                  document.getElementById("telDATA03").innerHTML="NULL"; 
+                  document.getElementById("telDATA04").innerHTML="NULL"; 
+                  document.getElementById("telDATA05").innerHTML="NULL"; 
+                  document.getElementById("telDATA06").innerHTML="NULL"; 
+                  document.getElementById("telDATA07").innerHTML="NULL"; 
+                  document.getElementById("telDATA08").innerHTML="NULL"; 
+                  document.getElementById("telDATA09").innerHTML="NULL"; 
                } //if
                else // Stop recording
                {
                   document.getElementById('recStatus').style.backgroundColor="#ff0000";
                   document.getElementById('recStatus').innerHTML="OFF";
-                  writeStream.end(); // Close file 
                } //else
             } // toggleREC()
 
@@ -108,6 +126,11 @@
             </LI> 
          </UL>
          <h2>Telemetry Recording Details</h2>
+         NOTE, it is currently not possible to write to the local hard drive srom Javascript executed inside a browser. 
+         We could implement a web server that runs server side NODE.js and then fetch the files off those servers but
+         we are going to pursue other options for a rich client experience. For now simple cut and paste the telemetry
+         data into a file with the suggested name in the suggested location. This is very much a poor mans PID tuning
+         tool.
          <table border=1>
             <tr>
                <td bgcolor="#fcfa94">File directory</td>
@@ -128,8 +151,44 @@
                   <td><label id="numLines">0</label></td>
             </tr>   
             <tr>
-               <td bgcolor="#fcfa94">Last Data Recieved</td>
-               <td><label id="telDATA">NULL</label></td>
+               <td bgcolor="#fcfa94">00</td>
+               <td><label id="telDATA00">NULL</label></td>
+            </tr>
+            <tr>
+               <td bgcolor="#fcfa94">01</td>
+               <td><label id="telDATA01">NULL</label></td>
+            </tr>
+            <tr>
+               <td bgcolor="#fcfa94">02</td>
+               <td><label id="telDATA02">NULL</label></td>
+            </tr>
+            <tr>
+               <td bgcolor="#fcfa94">03</td>
+               <td><label id="telDATA03">NULL</label></td>
+            </tr>
+            <tr>
+               <td bgcolor="#fcfa94">04</td>
+               <td><label id="telDATA04">NULL</label></td>
+            </tr>
+            <tr>
+               <td bgcolor="#fcfa94">05</td>
+               <td><label id="telDATA05">NULL</label></td>
+            </tr>
+            <tr>
+               <td bgcolor="#fcfa94">06</td>
+               <td><label id="telDATA06">NULL</label></td>
+            </tr>
+            <tr>
+               <td bgcolor="#fcfa94">07</td>
+               <td><label id="telDATA07">NULL</label></td>
+            </tr>
+            <tr>
+               <td bgcolor="#fcfa94">08</td>
+               <td><label id="telDATA08">NULL</label></td>
+            </tr>
+            <tr>
+               <td bgcolor="#fcfa94">09</td>
+               <td><label id="telDATA09">NULL</label></td>
             </tr>
          </table>
       </body>
