@@ -9802,9 +9802,9 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <attribute name="NAME" x="173.736" y="203.835" size="1.778" layer="95"/>
 <attribute name="VALUE" x="173.736" y="199.009" size="1.778" layer="96"/>
 </instance>
-<instance part="JP1" gate="G$1" x="167.64" y="134.62" smashed="yes">
-<attribute name="NAME" x="161.29" y="137.795" size="1.778" layer="95"/>
-<attribute name="VALUE" x="161.29" y="129.54" size="1.778" layer="96"/>
+<instance part="JP1" gate="G$1" x="167.64" y="137.16" smashed="yes">
+<attribute name="NAME" x="161.29" y="140.335" size="1.778" layer="95"/>
+<attribute name="VALUE" x="161.29" y="132.08" size="1.778" layer="96"/>
 </instance>
 <instance part="JP2" gate="G$1" x="167.64" y="124.46" smashed="yes">
 <attribute name="NAME" x="161.29" y="127.635" size="1.778" layer="95"/>
@@ -10200,18 +10200,6 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <junction x="124.46" y="48.26"/>
 </segment>
 </net>
-<net name="N$32" class="0">
-<segment>
-<pinref part="STEPDRV1" gate="G$1" pin="!ENABLE"/>
-<wire x1="205.74" y1="15.24" x2="213.36" y2="15.24" width="0.3048" layer="91"/>
-<wire x1="213.36" y1="15.24" x2="213.36" y2="93.98" width="0.3048" layer="91"/>
-<wire x1="213.36" y1="93.98" x2="154.94" y2="93.98" width="0.3048" layer="91"/>
-<wire x1="154.94" y1="93.98" x2="139.7" y2="109.22" width="0.3048" layer="91"/>
-<wire x1="139.7" y1="109.22" x2="139.7" y2="137.16" width="0.3048" layer="91"/>
-<pinref part="MS2" gate="G$1" pin="GPIOSCK"/>
-<wire x1="139.7" y1="137.16" x2="154.94" y2="137.16" width="0.3048" layer="91"/>
-</segment>
-</net>
 <net name="N$34" class="0">
 <segment>
 <pinref part="STEPDRV2" gate="G$1" pin="!ENABLE"/>
@@ -10268,8 +10256,13 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <net name="N$31" class="0">
 <segment>
 <pinref part="MS2" gate="G$1" pin="GPIOA5"/>
-<pinref part="JP1" gate="G$1" pin="1"/>
-<wire x1="154.94" y1="134.62" x2="165.1" y2="134.62" width="0.1524" layer="91"/>
+<pinref part="STEPDRV1" gate="G$1" pin="!ENABLE"/>
+<wire x1="205.74" y1="15.24" x2="213.36" y2="15.24" width="0.3048" layer="91"/>
+<wire x1="213.36" y1="15.24" x2="213.36" y2="93.98" width="0.3048" layer="91"/>
+<wire x1="213.36" y1="93.98" x2="154.94" y2="93.98" width="0.3048" layer="91"/>
+<wire x1="154.94" y1="93.98" x2="139.7" y2="109.22" width="0.3048" layer="91"/>
+<wire x1="139.7" y1="109.22" x2="139.7" y2="134.62" width="0.3048" layer="91"/>
+<wire x1="154.94" y1="134.62" x2="139.7" y2="134.62" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$37" class="0">
@@ -10285,6 +10278,13 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <pinref part="IBC" gate="G$1" pin="12"/>
 <pinref part="JP4" gate="G$1" pin="1"/>
 <wire x1="124.46" y1="60.96" x2="116.84" y2="60.96" width="0.3048" layer="91"/>
+</segment>
+</net>
+<net name="N$32" class="0">
+<segment>
+<pinref part="MS2" gate="G$1" pin="GPIOSCK"/>
+<pinref part="JP1" gate="G$1" pin="1"/>
+<wire x1="154.94" y1="137.16" x2="165.1" y2="137.16" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>
