@@ -9753,9 +9753,9 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <attribute name="VALUE" x="119.38" y="90.17" size="1.778" layer="96" rot="R270"/>
 <attribute name="NAME" x="135.382" y="90.17" size="1.778" layer="95" rot="R270"/>
 </instance>
-<instance part="CPU-USB-HEADER" gate="1" x="165.1" y="63.5" smashed="yes" rot="R90">
-<attribute name="VALUE" x="175.26" y="62.23" size="1.778" layer="96" rot="R90"/>
-<attribute name="NAME" x="159.258" y="62.23" size="1.778" layer="95" rot="R90"/>
+<instance part="CPU-USB-HEADER" gate="1" x="170.18" y="58.42" smashed="yes">
+<attribute name="VALUE" x="168.91" y="48.26" size="1.778" layer="96"/>
+<attribute name="NAME" x="168.91" y="64.262" size="1.778" layer="95"/>
 </instance>
 <instance part="IBC" gate="G$1" x="132.08" y="45.72" smashed="yes" rot="R180">
 <attribute name="VALUE" x="135.89" y="69.215" size="1.778" layer="96" rot="R180"/>
@@ -9810,13 +9810,13 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <attribute name="NAME" x="161.29" y="127.635" size="1.778" layer="95"/>
 <attribute name="VALUE" x="161.29" y="119.38" size="1.778" layer="96"/>
 </instance>
-<instance part="JP3" gate="G$1" x="119.38" y="68.58" smashed="yes">
-<attribute name="NAME" x="113.03" y="71.755" size="1.778" layer="95"/>
-<attribute name="VALUE" x="113.03" y="63.5" size="1.778" layer="96"/>
+<instance part="JP3" gate="G$1" x="106.68" y="66.04" smashed="yes">
+<attribute name="NAME" x="100.33" y="69.215" size="1.778" layer="95"/>
+<attribute name="VALUE" x="100.33" y="60.96" size="1.778" layer="96"/>
 </instance>
-<instance part="JP4" gate="G$1" x="119.38" y="60.96" smashed="yes">
-<attribute name="NAME" x="113.03" y="64.135" size="1.778" layer="95"/>
-<attribute name="VALUE" x="113.03" y="55.88" size="1.778" layer="96"/>
+<instance part="JP4" gate="G$1" x="106.68" y="55.88" smashed="yes">
+<attribute name="NAME" x="100.33" y="59.055" size="1.778" layer="95"/>
+<attribute name="VALUE" x="100.33" y="50.8" size="1.778" layer="96"/>
 </instance>
 </instances>
 <busses>
@@ -9917,36 +9917,36 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <segment>
 <pinref part="STEPDRV1" gate="G$1" pin="2B"/>
 <wire x1="172.72" y1="22.86" x2="152.4" y2="22.86" width="0.3048" layer="91"/>
-<wire x1="152.4" y1="22.86" x2="152.4" y2="38.1" width="0.3048" layer="91"/>
-<pinref part="IBC" gate="G$1" pin="16"/>
-<wire x1="152.4" y1="38.1" x2="139.7" y2="38.1" width="0.3048" layer="91"/>
+<wire x1="152.4" y1="22.86" x2="152.4" y2="43.18" width="0.3048" layer="91"/>
+<pinref part="IBC" gate="G$1" pin="18"/>
+<wire x1="139.7" y1="43.18" x2="152.4" y2="43.18" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$4" class="0">
 <segment>
 <pinref part="STEPDRV1" gate="G$1" pin="2A"/>
 <wire x1="172.72" y1="25.4" x2="154.94" y2="25.4" width="0.3048" layer="91"/>
-<wire x1="154.94" y1="25.4" x2="154.94" y2="40.64" width="0.3048" layer="91"/>
-<pinref part="IBC" gate="G$1" pin="17"/>
-<wire x1="154.94" y1="40.64" x2="139.7" y2="40.64" width="0.3048" layer="91"/>
+<wire x1="154.94" y1="25.4" x2="154.94" y2="45.72" width="0.3048" layer="91"/>
+<pinref part="IBC" gate="G$1" pin="19"/>
+<wire x1="139.7" y1="45.72" x2="154.94" y2="45.72" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$6" class="0">
 <segment>
 <pinref part="STEPDRV1" gate="G$1" pin="1A"/>
 <wire x1="172.72" y1="30.48" x2="157.48" y2="30.48" width="0.3048" layer="91"/>
-<wire x1="157.48" y1="30.48" x2="157.48" y2="43.18" width="0.3048" layer="91"/>
-<pinref part="IBC" gate="G$1" pin="18"/>
-<wire x1="157.48" y1="43.18" x2="139.7" y2="43.18" width="0.3048" layer="91"/>
+<wire x1="157.48" y1="30.48" x2="157.48" y2="48.26" width="0.3048" layer="91"/>
+<pinref part="IBC" gate="G$1" pin="20"/>
+<wire x1="139.7" y1="48.26" x2="157.48" y2="48.26" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$7" class="0">
 <segment>
 <pinref part="STEPDRV1" gate="G$1" pin="1B"/>
 <wire x1="172.72" y1="33.02" x2="160.02" y2="33.02" width="0.3048" layer="91"/>
-<wire x1="160.02" y1="33.02" x2="160.02" y2="45.72" width="0.3048" layer="91"/>
-<pinref part="IBC" gate="G$1" pin="19"/>
-<wire x1="160.02" y1="45.72" x2="139.7" y2="45.72" width="0.3048" layer="91"/>
+<wire x1="160.02" y1="33.02" x2="160.02" y2="50.8" width="0.3048" layer="91"/>
+<pinref part="IBC" gate="G$1" pin="21"/>
+<wire x1="139.7" y1="50.8" x2="160.02" y2="50.8" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$8" class="0">
@@ -9983,38 +9983,6 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <wire x1="114.3" y1="33.02" x2="91.44" y2="33.02" width="0.3048" layer="91"/>
 <pinref part="IBC" gate="G$1" pin="5"/>
 <wire x1="114.3" y1="43.18" x2="124.46" y2="43.18" width="0.1524" layer="91"/>
-</segment>
-</net>
-<net name="N$13" class="0">
-<segment>
-<pinref part="IBC" gate="G$1" pin="23"/>
-<wire x1="139.7" y1="55.88" x2="162.56" y2="55.88" width="0.3048" layer="91"/>
-<pinref part="CPU-USB-HEADER" gate="1" pin="4"/>
-<wire x1="162.56" y1="71.12" x2="162.56" y2="55.88" width="0.3048" layer="91"/>
-</segment>
-</net>
-<net name="N$14" class="0">
-<segment>
-<pinref part="IBC" gate="G$1" pin="22"/>
-<wire x1="139.7" y1="53.34" x2="165.1" y2="53.34" width="0.3048" layer="91"/>
-<pinref part="CPU-USB-HEADER" gate="1" pin="3"/>
-<wire x1="165.1" y1="71.12" x2="165.1" y2="53.34" width="0.3048" layer="91"/>
-</segment>
-</net>
-<net name="N$18" class="0">
-<segment>
-<pinref part="IBC" gate="G$1" pin="21"/>
-<wire x1="139.7" y1="50.8" x2="167.64" y2="50.8" width="0.3048" layer="91"/>
-<pinref part="CPU-USB-HEADER" gate="1" pin="2"/>
-<wire x1="167.64" y1="71.12" x2="167.64" y2="50.8" width="0.3048" layer="91"/>
-</segment>
-</net>
-<net name="N$30" class="0">
-<segment>
-<pinref part="IBC" gate="G$1" pin="20"/>
-<wire x1="139.7" y1="48.26" x2="170.18" y2="48.26" width="0.3048" layer="91"/>
-<pinref part="CPU-USB-HEADER" gate="1" pin="1"/>
-<wire x1="170.18" y1="71.12" x2="170.18" y2="48.26" width="0.3048" layer="91"/>
 </segment>
 </net>
 <net name="3V" class="0">
@@ -10088,13 +10056,13 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <wire x1="129.54" y1="104.14" x2="129.54" y2="144.78" width="0.3048" layer="91"/>
 <wire x1="129.54" y1="104.14" x2="142.24" y2="88.9" width="0.3048" layer="91"/>
 <wire x1="142.24" y1="88.9" x2="142.24" y2="73.66" width="0.3048" layer="91"/>
-<wire x1="109.22" y1="73.66" x2="142.24" y2="73.66" width="0.3048" layer="91"/>
-<pinref part="IBC" gate="G$1" pin="8"/>
-<wire x1="124.46" y1="50.8" x2="109.22" y2="50.8" width="0.3048" layer="91"/>
-<wire x1="109.22" y1="50.8" x2="109.22" y2="73.66" width="0.3048" layer="91"/>
+<wire x1="116.84" y1="73.66" x2="142.24" y2="73.66" width="0.3048" layer="91"/>
 <pinref part="MS2" gate="G$1" pin="GPIOSDA"/>
 <wire x1="111.76" y1="149.86" x2="129.54" y2="149.86" width="0.1524" layer="91"/>
 <wire x1="129.54" y1="149.86" x2="129.54" y2="144.78" width="0.1524" layer="91"/>
+<pinref part="IBC" gate="G$1" pin="11"/>
+<wire x1="124.46" y1="58.42" x2="116.84" y2="58.42" width="0.1524" layer="91"/>
+<wire x1="116.84" y1="58.42" x2="116.84" y2="73.66" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$21" class="0">
@@ -10193,11 +10161,8 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <wire x1="101.6" y1="35.56" x2="109.22" y2="35.56" width="0.3048" layer="91"/>
 <junction x="101.6" y="35.56"/>
 <wire x1="109.22" y1="35.56" x2="109.22" y2="48.26" width="0.3048" layer="91"/>
-<wire x1="109.22" y1="48.26" x2="121.92" y2="48.26" width="0.3048" layer="91"/>
 <pinref part="IBC" gate="G$1" pin="7"/>
-<wire x1="124.46" y1="48.26" x2="132.08" y2="48.26" width="0.3048" layer="91"/>
-<wire x1="121.92" y1="48.26" x2="124.46" y2="48.26" width="0.1524" layer="91"/>
-<junction x="124.46" y="48.26"/>
+<wire x1="109.22" y1="48.26" x2="124.46" y2="48.26" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$34" class="0">
@@ -10227,9 +10192,10 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <wire x1="132.08" y1="106.68" x2="132.08" y2="144.78" width="0.3048" layer="91"/>
 <pinref part="MS2" gate="G$1" pin="GPIORX"/>
 <wire x1="132.08" y1="144.78" x2="154.94" y2="144.78" width="0.3048" layer="91"/>
-<wire x1="144.78" y1="71.12" x2="144.78" y2="60.96" width="0.3048" layer="91"/>
-<pinref part="IBC" gate="G$1" pin="25"/>
-<wire x1="144.78" y1="60.96" x2="139.7" y2="60.96" width="0.3048" layer="91"/>
+<wire x1="144.78" y1="71.12" x2="119.38" y2="71.12" width="0.1524" layer="91"/>
+<wire x1="119.38" y1="71.12" x2="119.38" y2="60.96" width="0.1524" layer="91"/>
+<pinref part="IBC" gate="G$1" pin="12"/>
+<wire x1="119.38" y1="60.96" x2="124.46" y2="60.96" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$16" class="0">
@@ -10238,12 +10204,13 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <wire x1="154.94" y1="111.76" x2="215.9" y2="111.76" width="0.3048" layer="91"/>
 <wire x1="215.9" y1="111.76" x2="215.9" y2="10.16" width="0.3048" layer="91"/>
 <wire x1="215.9" y1="10.16" x2="190.5" y2="10.16" width="0.3048" layer="91"/>
-<wire x1="190.5" y1="10.16" x2="190.5" y2="73.66" width="0.3048" layer="91"/>
-<wire x1="190.5" y1="73.66" x2="149.86" y2="73.66" width="0.3048" layer="91"/>
-<wire x1="149.86" y1="68.58" x2="149.86" y2="73.66" width="0.3048" layer="91"/>
-<pinref part="IBC" gate="G$1" pin="24"/>
-<wire x1="139.7" y1="58.42" x2="149.86" y2="58.42" width="0.3048" layer="91"/>
-<wire x1="149.86" y1="58.42" x2="149.86" y2="68.58" width="0.3048" layer="91"/>
+<wire x1="190.5" y1="10.16" x2="190.5" y2="81.28" width="0.3048" layer="91"/>
+<wire x1="190.5" y1="81.28" x2="149.86" y2="81.28" width="0.3048" layer="91"/>
+<wire x1="149.86" y1="68.58" x2="149.86" y2="81.28" width="0.3048" layer="91"/>
+<pinref part="IBC" gate="G$1" pin="13"/>
+<wire x1="124.46" y1="63.5" x2="121.92" y2="63.5" width="0.1524" layer="91"/>
+<wire x1="121.92" y1="63.5" x2="121.92" y2="68.58" width="0.1524" layer="91"/>
+<wire x1="121.92" y1="68.58" x2="149.86" y2="68.58" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$36" class="0">
@@ -10265,26 +10232,58 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <wire x1="154.94" y1="134.62" x2="139.7" y2="134.62" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$37" class="0">
-<segment>
-<pinref part="IBC" gate="G$1" pin="13"/>
-<wire x1="124.46" y1="63.5" x2="124.46" y2="68.58" width="0.3048" layer="91"/>
-<pinref part="JP3" gate="G$1" pin="1"/>
-<wire x1="124.46" y1="68.58" x2="116.84" y2="68.58" width="0.3048" layer="91"/>
-</segment>
-</net>
-<net name="N$38" class="0">
-<segment>
-<pinref part="IBC" gate="G$1" pin="12"/>
-<pinref part="JP4" gate="G$1" pin="1"/>
-<wire x1="124.46" y1="60.96" x2="116.84" y2="60.96" width="0.3048" layer="91"/>
-</segment>
-</net>
 <net name="N$32" class="0">
 <segment>
 <pinref part="MS2" gate="G$1" pin="GPIOSCK"/>
 <pinref part="JP1" gate="G$1" pin="1"/>
 <wire x1="154.94" y1="137.16" x2="165.1" y2="137.16" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$38" class="0">
+<segment>
+<pinref part="IBC" gate="G$1" pin="9"/>
+<wire x1="124.46" y1="53.34" x2="111.76" y2="53.34" width="0.1524" layer="91"/>
+<wire x1="111.76" y1="53.34" x2="109.22" y2="55.88" width="0.1524" layer="91"/>
+<pinref part="JP4" gate="G$1" pin="1"/>
+<wire x1="109.22" y1="55.88" x2="104.14" y2="55.88" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$37" class="0">
+<segment>
+<pinref part="IBC" gate="G$1" pin="10"/>
+<wire x1="124.46" y1="55.88" x2="114.3" y2="55.88" width="0.1524" layer="91"/>
+<wire x1="114.3" y1="55.88" x2="111.76" y2="58.42" width="0.1524" layer="91"/>
+<pinref part="JP3" gate="G$1" pin="1"/>
+<wire x1="111.76" y1="66.04" x2="104.14" y2="66.04" width="0.1524" layer="91"/>
+<wire x1="111.76" y1="58.42" x2="111.76" y2="66.04" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$13" class="0">
+<segment>
+<pinref part="IBC" gate="G$1" pin="25"/>
+<pinref part="CPU-USB-HEADER" gate="1" pin="4"/>
+<wire x1="139.7" y1="60.96" x2="177.8" y2="60.96" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$14" class="0">
+<segment>
+<pinref part="CPU-USB-HEADER" gate="1" pin="3"/>
+<pinref part="IBC" gate="G$1" pin="24"/>
+<wire x1="177.8" y1="58.42" x2="139.7" y2="58.42" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$18" class="0">
+<segment>
+<pinref part="IBC" gate="G$1" pin="23"/>
+<pinref part="CPU-USB-HEADER" gate="1" pin="2"/>
+<wire x1="139.7" y1="55.88" x2="177.8" y2="55.88" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$30" class="0">
+<segment>
+<pinref part="CPU-USB-HEADER" gate="1" pin="1"/>
+<pinref part="IBC" gate="G$1" pin="22"/>
+<wire x1="177.8" y1="53.34" x2="139.7" y2="53.34" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>
