@@ -8917,22 +8917,18 @@ CONNECTOR</text>
 <pinref part="J1" gate="G$1" pin="2"/>
 <wire x1="99.06" y1="7.62" x2="109.22" y2="7.62" width="0.3048" layer="91"/>
 <wire x1="68.58" y1="68.58" x2="63.5" y2="68.58" width="0.1524" layer="91"/>
-<wire x1="63.5" y1="68.58" x2="63.5" y2="58.42" width="0.1524" layer="91"/>
-<wire x1="63.5" y1="58.42" x2="60.96" y2="55.88" width="0.1524" layer="91"/>
-<pinref part="X1" gate="G$1" pin="24"/>
-<wire x1="60.96" y1="55.88" x2="60.96" y2="50.8" width="0.1524" layer="91"/>
+<pinref part="X1" gate="G$1" pin="23"/>
+<wire x1="63.5" y1="50.8" x2="63.5" y2="68.58" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$23" class="0">
 <segment>
-<wire x1="60.96" y1="58.42" x2="60.96" y2="71.12" width="0.3048" layer="91"/>
 <wire x1="60.96" y1="71.12" x2="119.38" y2="71.12" width="0.3048" layer="91"/>
 <pinref part="J1" gate="G$1" pin="3"/>
 <wire x1="99.06" y1="5.08" x2="119.38" y2="5.08" width="0.3048" layer="91"/>
 <wire x1="119.38" y1="5.08" x2="119.38" y2="71.12" width="0.3048" layer="91"/>
-<wire x1="63.5" y1="55.88" x2="60.96" y2="58.42" width="0.1524" layer="91"/>
-<pinref part="X1" gate="G$1" pin="23"/>
-<wire x1="63.5" y1="50.8" x2="63.5" y2="55.88" width="0.1524" layer="91"/>
+<pinref part="X1" gate="G$1" pin="24"/>
+<wire x1="60.96" y1="50.8" x2="60.96" y2="71.12" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$24" class="0">
