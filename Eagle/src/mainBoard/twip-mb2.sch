@@ -10126,7 +10126,6 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 </net>
 <net name="N$11" class="0">
 <segment>
-<wire x1="119.38" y1="91.44" x2="119.38" y2="81.28" width="0.3048" layer="91"/>
 <pinref part="R3" gate="G$1" pin="2"/>
 <wire x1="124.46" y1="144.78" x2="124.46" y2="104.14" width="0.3048" layer="91"/>
 <wire x1="124.46" y1="104.14" x2="124.46" y2="93.98" width="0.3048" layer="91"/>
@@ -10134,11 +10133,8 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <junction x="124.46" y="104.14"/>
 <pinref part="MS2" gate="G$1" pin="GPIO5"/>
 <wire x1="124.46" y1="144.78" x2="111.76" y2="144.78" width="0.1524" layer="91"/>
-<wire x1="124.46" y1="93.98" x2="119.38" y2="93.98" width="0.1524" layer="91"/>
-<wire x1="119.38" y1="93.98" x2="119.38" y2="91.44" width="0.1524" layer="91"/>
-<wire x1="119.38" y1="81.28" x2="127" y2="81.28" width="0.1524" layer="91"/>
-<pinref part="LCD-HEADER" gate="1" pin="2"/>
-<wire x1="127" y1="81.28" x2="127" y2="83.82" width="0.1524" layer="91"/>
+<pinref part="LCD-HEADER" gate="1" pin="1"/>
+<wire x1="124.46" y1="93.98" x2="124.46" y2="83.82" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$33" class="0">
@@ -10182,11 +10178,9 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <wire x1="127" y1="96.52" x2="127" y2="147.32" width="0.3048" layer="91"/>
 <pinref part="MS2" gate="G$1" pin="GPIOSCL"/>
 <wire x1="111.76" y1="147.32" x2="127" y2="147.32" width="0.1524" layer="91"/>
+<pinref part="LCD-HEADER" gate="1" pin="2"/>
+<wire x1="127" y1="96.52" x2="127" y2="83.82" width="0.1524" layer="91"/>
 <junction x="127" y="96.52"/>
-<wire x1="127" y1="96.52" x2="127" y2="91.44" width="0.1524" layer="91"/>
-<wire x1="127" y1="91.44" x2="124.46" y2="91.44" width="0.1524" layer="91"/>
-<pinref part="LCD-HEADER" gate="1" pin="1"/>
-<wire x1="124.46" y1="91.44" x2="124.46" y2="83.82" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$19" class="0">
