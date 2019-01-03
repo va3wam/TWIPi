@@ -1355,6 +1355,7 @@ String ipToString(IPAddress ip)
  3:received NACK on transmit of data
  4:other error
  ***********************************************************************************************************/
+
 void initializeIMU_1()
 {
     byte error, lowByte;
@@ -1380,7 +1381,14 @@ void initializeIMU_1()
         Wire1.requestFrom(MPU_address, 1);
         while(Wire1.available() < 1); // Wait for reply from IMU slave on I2C bus                                     
         lowByte = Wire1.read();
-        if(lowByte == MPU_address)
+        if(lowByte != MPU_address)   // if there was an error...
+        {
+           sp("[initializeIMU_2] Wrong Who Am I response: 0x");
+           if (lowByte<16)Serial.print("0");
+           spl(lowByte, HEX);
+           spl("[initializeIMU_2] Initialization of IMU failed");    
+        }
+        else
         {    
             sp("[initializeIMU_1] Who Am I response is ok: 0x");
             spl(lowByte, HEX);        
@@ -1388,7 +1396,19 @@ void initializeIMU_1()
             set_gyro_registers();
             spl("[initializeIMU_1] Gyro started and configured");
             spl("[initializeIMU_1] Waiting to allow MPU to settle down");
-            IMU_warmup_start = millis() ;    // remember when the IMU warmup started for initializeIMU_2, called later
+        } //if(lowByte)...
+
+        IMU_warmup_start = millis() ; // remember when the IMU warmup started for initializeIMU_2, called later
+                                      // just fall out of initializeIMU_1, &d wait for InitializeIMU_2 to be called
+    }   // if(error)...
+
+    else   // if IMU didn't respond at expected I2C address
+    {
+        sp("[initializeIMU_2] MPU-6050 query returned error code ");
+        spl(error);
+        spl("[initializeIMU_2] ERROR! Robot will not be able to balance");
+    } //else
+
 
 //  The rest of the IMU initialization is done in routine initializeIMU_2, which follows
 } //initializeIMU_1()
@@ -1410,16 +1430,17 @@ void initializeIMU_2()
     LINE("[initializeIMU_2] Initializing the MPU6050 IMU part 2. Source code line: ", __LINE__);
     sp("[initializeIMU_2]: Continuing IMU warmup and calibration");
     spl(MPU_address,HEX);
+    temp = millis() - IMU_warmup_start;            // this is how many msec IMU has been warming up
 
-            temp = Millis() - IMU_warmup_start;      // this is how many msec IMU has been warming up
-            if( temp < IMU_warmup_interval)          // if there's still time left in the warmup      
-            for(int x=(IMU_warmup-interval - temp; x > 0; x--)   // then kill time until warmup's done
-            {   if( x == x&1024)                      // if we're roughly at a one second multiple...
-                {   tmsg = "[initializeIMU_2] Delay countdown in msec: " + String(x);
-                    spl(tmsg);                       // display time to go on console in msec
-                    delay(1);                        // just passing time while IMU warms up
-                } // if
-            } //for
+    if( temp < IMU_warmup_interval)                // if there's still time left in the warmup      
+    {   for(int x = IMU_warmup_interval - temp; x > 0; x--)   // then kill time until warmup's done
+        {  if( x == (x & 0xFFFFFC00))                      // if we're roughly at a one second multiple (1024)...
+           {  tmsg = "[initializeIMU_2] Delay countdown in msec: " + String(x);
+              spl(tmsg);                        // display time to go on console in msec
+           } // if 
+           delay(1);                            // just passing time while IMU warms up
+        } //for
+    }  //if
             read_mpu_6050_data(); // Read MPU registers                
             spl("[initializeIMU_2] Create Gyro pitch and yaw offset values by averaging 500 sensor readings...");
             tcnt1 = 0; tcnt2 = 10;
@@ -1481,21 +1502,7 @@ void initializeIMU_2()
             spl(balance_calibration_value);
             sp("[initializeIMU]: acc_calibration_value currently set to ");
             spl(acc_calibration_value);
-        } //if
-        else
-        {     
-            sp("[initializeIMU_2] Wrong Who Am I response: 0x");
-            if (lowByte<16)Serial.print("0");
-            spl(lowByte, HEX);
-            spl("[initializeIMU_2] Initialization of IMU failed");    
-        } //else
-    } //if
-    else
-    {
-        sp("[initializeIMU_2] MPU-6050 query returned error code ");
-        spl(error);
-        spl("[initializeIMU_2] ERROR! Robot will not be able to balance");
-    } //else
+ 
     spl("[initializeIMU_2] IMU initialization complete. Ending FreeRTOS task thread");
     imuReady = true;
     //vTaskDelete( NULL );
