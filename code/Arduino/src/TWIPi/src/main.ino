@@ -1,12 +1,3 @@
-#include <Arduino.h>              // Required for platformIO Intellisense? Standard Arduino functions?
-#include <WiFi.h>                 // Required to connect to WiFi network
-#include <WiFiMulti.h>            // Allows us to try connecting to multiple Access Points
-#include <ESP32WebServer.h>       // https://github.com/Pedroalbuquerque/ESP32WebServer
-#include <ESPmDNS.h>              // Required for domain name service
-#include <WebSocketsServer.h>     // https://github.com/Links2004/arduinoWebSockets
-#include <Wire.h>                 // Needed for I2C communication
-#include <LiquidCrystal_I2C.h>    // https://github.com/marcoschwartz/LiquidCrystal_I2C
-#include <ArduinoJson.h>          // https://github.com/bblanchon/ArduinoJson
 /* Table of Contents ... egrep '^void|static void|volatile void' main.ino
 
 void flashLCD();  // from http://forum.arduino.cc/index.php?topic=42835.0
@@ -47,7 +38,15 @@ void balanceRobot()
 void loop()
 */
 
-
+#include <Arduino.h>              // Required for platformIO Intellisense? Standard Arduino functions?
+#include <WiFi.h>                 // Required to connect to WiFi network
+#include <WiFiMulti.h>            // Allows us to try connecting to multiple Access Points
+#include <ESP32WebServer.h>       // https://github.com/Pedroalbuquerque/ESP32WebServer
+#include <ESPmDNS.h>              // Required for domain name service
+#include <WebSocketsServer.h>     // https://github.com/Links2004/arduinoWebSockets
+#include <Wire.h>                 // Needed for I2C communication
+#include <LiquidCrystal_I2C.h>    // https://github.com/marcoschwartz/LiquidCrystal_I2C
+#include <ArduinoJson.h>          // https://github.com/bblanchon/ArduinoJson
 /***********************************************************************************************************
   Synopsis:
   This is the main sketch for the TWIPi robot. 
@@ -80,9 +79,12 @@ void loop()
       PATCH version when you make backwards-compatible bug fixes.
 
   ------- ---------- ---------------------------------------------------------------------------------------
-  2.2.8   2018-01-01 - return IMU warmup to 10 seconds so its stable before calibration
+  2.2.8   2018-01-01 - return IMU warmup to 11 seconds so it's stable before calibration, 
+          -split IMS initialization into two parts to allow network startup to run in parallel
+          -add timeline macro to output timestamps + line numbers during setup()
           -add crude table of contents at top of file to help find routines in source code
           -simplify the I2C bus scan output,  discarding double dots.
+          -do quicker speed changes by having balanceRobot zero the throttle_*_motor_memory variables
   2.2.7   2018-12-11 -add crude compensation for both gyro and accel angle measurements, because reading were off
           by 9 degees. also, gyro and accel don't agree - off by about 1.5 degrees
           -change bot fast speed control from 250 to 300 due to stalling motors
@@ -150,12 +152,13 @@ void loop()
  ***********************************************************************************************************/
 
 /***********************************************************************************************************
- Doug's shortcuts.
+ Debug printing shortcuts.
  ***********************************************************************************************************/
 #define LINE(name,val) Serial.print(name); Serial.print(". Code Line: "); Serial.println(val); // Debug macro 
                                                                                                // prints 
                                                                                                // current 
-                                                                                               // code line
+// simple timestamp at a particular line to examine boot timing...                             // code line
+#define timeline() sp("===== timestamp at LINE "); sp(__LINE__); spc; spl(millis());
 #define sp Serial.print // Shortform print no carrige return
 #define spl Serial.println // Shortform print with carrige return
 #define spc Serial.print(", ") // Shortform print comma and space
@@ -327,8 +330,8 @@ int gyro_y; // Read raw low and high byte to the MPU gyro_y register
 int gyro_z; // Read raw low and high byte to the MPU gyro_z register
 int temperature; // Read raw low and high byte to the MPU temperature register
 volatile boolean imuReady = false; // flag used to note when imu boot sequence is complete
-int IMU_warmup_start;     // used to track IMU period
-int IMU_warmup_interval;    // length of IMU warmup period in milliseconds
+int IMU_warmup_start;               // used to track beginning of IMU warmup period
+int IMU_warmup_interval = 11000;    // length of IMU warmup period in milliseconds
 
 /***********************************************************************************************************
  Define LCD related variables. 
@@ -533,7 +536,7 @@ void startI2Cone()
 void startI2Ctwo()
 {
     LINE("[startI2Ctwo] Initialize I2C bus. Source code line: ", __LINE__);
-    Wire1.begin(SDA2,SCL2,400000); // 400KHz, uppder speed limit for ESP32 I2C
+    Wire1.begin(SDA2,SCL2,400000); // 400KHz, upper speed limit for ESP32 I2C
     uint8_t cnt=0;
     for(uint8_t i=0;i<128;i++)
     {
@@ -1360,7 +1363,7 @@ void initializeIMU_1()
     int receive_counter;
     int temp,tcnt1, tcnt2;
     String tmsg;
-    LINE("[initializeIMU_1] Initializing the MPU6050 IMU. Source code line: ", __LINE__);
+    LINE("[initializeIMU_1] Initializing the MPU6050 IMU part 1. Source code line: ", __LINE__);
     sp("[initializeIMU_1]: Checking to see if the IMU is found on I2Ctwo at expected I2C address of 0x");
     spl(MPU_address,HEX);
     Wire1.beginTransmission(MPU_address);
@@ -1385,99 +1388,15 @@ void initializeIMU_1()
             set_gyro_registers();
             spl("[initializeIMU_1] Gyro started and configured");
             spl("[initializeIMU_1] Waiting to allow MPU to settle down");
-            IMU_warmup_start = millis() ;    // remember when the IMU warmup started for initializeIMU_2
-/*  The rest of the IMU initialization is done in routine initializeIMU_2, which
-    is called later, after some network setup is done in parallel. The variable IMU_warmup is
-    used to ensure the IMU gets a 10 second warmup, but lets other routines run in the meantime.          
-            for(int x=5; x > 1; x--)
-            {
-                tmsg = "[initializeIMU] Delay countdown: " + String(x);
-                spl(tmsg);
-                delay(1000);                // just passing time while IMU warms up
-            } //for
-            read_mpu_6050_data(); // Read MPU registers                
-            spl("[initializeIMU] Create Gyro pitch and yaw offset values by averaging 500 sensor readings...");
-            tcnt1 = 0; tcnt2 = 10;
-            for(receive_counter = 0; receive_counter < 500; receive_counter++) // Create 500 loops
-            {
-                tcnt1 ++;
-                if(tcnt1 > 50)
-                {
-                    tcnt1 = 0;
-                    tcnt2 --;
-                    tmsg = "[initializeIMU] Gyro calc countdown: " + String(tcnt2);
-                    spl(tmsg);              
-                } //if
+            IMU_warmup_start = millis() ;    // remember when the IMU warmup started for initializeIMU_2, called later
 
-                Wire1.beginTransmission(MPU_address); // Start communication with the gyro
-//                Wire1.write(0x45); // Start reading the GYRO Y and Z registers
-                Wire1.write(0x43); // Start reading the GYRO X and Y registers
-                Wire1.endTransmission(); // End the transmission
-                Wire1.requestFrom(MPU_address, 4); // Request 2 bytes from the gyro
-                temp = Wire1.read()<<8|Wire1.read(); // Combine the two bytes to make one integer, that could be negative
-                if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
-//                gyro_pitch_calibration_value += temp; // 16 bit Y value from gyro, accumulating in 32 bit variable, sign extended
-                gyro_roll_calibration_value += temp; // 16 bit Y value from gyro, accumulating in 32 bit variable, sign extended
-                temp = Wire1.read()<<8|Wire1.read(); // Combine the two bytes to make one integer, that could be negative
-                if(temp > 32767) temp = temp - 65536; // if it's really a negative number, fix it
-//                gyro_yaw_calibration_value += temp; // 16 bit Z value from gyro, accumulating in 32 bit variable, sign extended
-                gyro_pitch_calibration_value += temp; // 16 bit Z value from gyro, accumulating in 32 bit variable, sign extended
-                delay(2);                              // delay was 20, but sped it up
-
-                Wire1.beginTransmission(MPU_address); // Start communication with the IMU
-//                Wire1.write(0x3F); // Get the MPU6050_ACCEL_ZOUT_H value
-                Wire1.write(0x3D); // Get the MPU6050_ACCEL_ZOUT_H value
-                Wire1.endTransmission(); // End the transmission with the gyro
-                Wire1.requestFrom(MPU_address,2);
-                temp = Wire1.read()<<8|Wire1.read(); // Read the 16 bit number from IMU
-
-                if(temp > 32767) temp = temp - 65536; // If it's really a negative number, fix it
-                balance_calibration_value += temp; // 16 bit Z value from accelerometer, accumulating in 32 bit variable, sign extended
-                delay(2);                           // delay was 20, but sped it up
-            } //for   
-            if(gyro_roll_calibration_value == -500 && 
-                gyro_pitch_calibration_value == -500) // If calibration numbers are characteristically weird
-            {
-                while( 1==1) // request an IMU reset, because it's not working
-                {
-                    spl("[setup] ******* IMU is stuck and needs a reset **********");
-                    delay(3000);
-                } //while
-            } //if
-            gyro_roll_calibration_value /= 500; // Divide the total value by 500 to get the avarage gyro pitch offset
-            gyro_pitch_calibration_value /= 500; // Divide the total value by 500 to get the avarage gyro yaw offset
-            balance_calibration_value /=500; // Divide the total value by 500 to get the avarage balance value (Z accelerometer)            
-            sp("[initializeIMU] gyro_pitch_calibration_value= "); 
-            spl(gyro_pitch_calibration_value);
-            sp("[initializeIMU] gyro_roll_calibration_value= "); 
-            spl(gyro_roll_calibration_value);
-            sp("[initializeIMU] speed override value= "); spl(speed);    
-            sp("[initializeIMU]: Balance value. NOTE - this is the balance value only if the robot is standing upright: ");
-            spl(balance_calibration_value);
-            sp("[initializeIMU]: acc_calibration_value currently set to ");
-            spl(acc_calibration_value);
-        } //if
-        else
-        {     
-            sp("[initializeIMU] Wrong Who Am I responce: 0x");
-            if (lowByte<16)Serial.print("0");
-            spl(lowByte, HEX);
-            spl("[initializeIMU] Initialization of IMU failed");    
-        } //else
-    } //if
-    else
-    {
-        sp("[initializeIMU] MPU-6050 query returned error code ");
-        spl(error);
-        spl("[initializeIMU] ERROR! Robot will not be able to balance");
-    } //else
-    spl("[initializeIMU] IMU initialization complete. Ending FreeRTOS task thread");
-    imuReady = true;
-    //vTaskDelete( NULL );
-*/      
+//  The rest of the IMU initialization is done in routine initializeIMU_2, which follows
 } //initializeIMU_1()
 
-// see explanation of 2 stage IMU initialization at begining of initializeIMU_1 routine immediately above
+//  The second part of the IMU initialization is done in the following routine initializeIMU_2, which
+//  is called a while after initializeIMU_1, from setup(), after some network setup is done in parallel.
+//  The variable IMU_warmup_start and IMU_warmup_interval are used to ensure the IMU gets a long enough warmup,
+//  but lets other routines run in the meantime.  
 
 void initializeIMU_2()
 {
@@ -1487,43 +1406,22 @@ void initializeIMU_2()
     int receive_counter;
     int temp,tcnt1, tcnt2;
     String tmsg;
-    LINE("[initializeIMU_1] Initializing the MPU6050 IMU. Source code line: ", __LINE__);
-    sp("[initializeIMU_1]: Checking to see if the IMU is found on I2Ctwo at expected I2C address of 0x");
+    
+    LINE("[initializeIMU_2] Initializing the MPU6050 IMU part 2. Source code line: ", __LINE__);
+    sp("[initializeIMU_2]: Continuing IMU warmup and calibration");
     spl(MPU_address,HEX);
-    Wire1.beginTransmission(MPU_address);
-    error = Wire1.endTransmission(true);
-    if (error == 0)
-    {
-        sp("[initializeIMU_1] I2C device found on I2Ctwo at address 0x");
-        spl(MPU_address,HEX);
-        spl("[initializeIMU_1] The IMU MPU-6050 found at expected address");
-        Wire1.beginTransmission(MPU_address);
-        Wire1.write(MPU6050_WHO_AM_I);
-        Wire1.endTransmission();
-        spl("[initializeIMU-1] Send Who am I request to IMU...");
-        Wire1.requestFrom(MPU_address, 1);
-        while(Wire1.available() < 1); // Wait for reply from IMU slave on I2C bus                                     
-        lowByte = Wire1.read();
-        if(lowByte == MPU_address)
-        {    
-            sp("[initializeIMU_1] Who Am I response is ok: 0x");
-            spl(lowByte, HEX);        
-            spl("[initializeIMU_1] Set up the Gyro registers in the IMU");
-            set_gyro_registers();
-            spl("[initializeIMU_1] Gyro started and configured");
-            spl("[initializeIMU_1] Waiting to allow MPU to settle down");
-            IMU_warmup_start = millis() ;    // remember when the IMU warmup started for initializeIMU_2
-/*  The rest of the IMU initialization is done in routine initializeIMU_2, which
-    is called later, after some network setup is done in parallel. The variable IMU_warmup is
-    used to ensure the IMU gets a 10 second warmup, but lets other routines run in the meantime.          
-            for(int x=5; x > 1; x--)
-            {
-                tmsg = "[initializeIMU] Delay countdown: " + String(x);
-                spl(tmsg);
-                delay(1000);                // just passing time while IMU warms up
+
+            temp = Millis() - IMU_warmup_start;      // this is how many msec IMU has been warming up
+            if( temp < IMU_warmup_interval)          // if there's still time left in the warmup      
+            for(int x=(IMU_warmup-interval - temp; x > 0; x--)   // then kill time until warmup's done
+            {   if( x == x&1024)                      // if we're roughly at a one second multiple...
+                {   tmsg = "[initializeIMU_2] Delay countdown in msec: " + String(x);
+                    spl(tmsg);                       // display time to go on console in msec
+                    delay(1);                        // just passing time while IMU warms up
+                } // if
             } //for
             read_mpu_6050_data(); // Read MPU registers                
-            spl("[initializeIMU] Create Gyro pitch and yaw offset values by averaging 500 sensor readings...");
+            spl("[initializeIMU_2] Create Gyro pitch and yaw offset values by averaging 500 sensor readings...");
             tcnt1 = 0; tcnt2 = 10;
             for(receive_counter = 0; receive_counter < 500; receive_counter++) // Create 500 loops
             {
@@ -1532,7 +1430,7 @@ void initializeIMU_2()
                 {
                     tcnt1 = 0;
                     tcnt2 --;
-                    tmsg = "[initializeIMU] Gyro calc countdown: " + String(tcnt2);
+                    tmsg = "[initializeIMU_2] Gyro calc countdown: " + String(tcnt2);
                     spl(tmsg);              
                 } //if
 
@@ -1574,35 +1472,35 @@ void initializeIMU_2()
             gyro_roll_calibration_value /= 500; // Divide the total value by 500 to get the avarage gyro pitch offset
             gyro_pitch_calibration_value /= 500; // Divide the total value by 500 to get the avarage gyro yaw offset
             balance_calibration_value /=500; // Divide the total value by 500 to get the avarage balance value (Z accelerometer)            
-            sp("[initializeIMU] gyro_pitch_calibration_value= "); 
+            sp("[initializeIMU_2] gyro_pitch_calibration_value= "); 
             spl(gyro_pitch_calibration_value);
-            sp("[initializeIMU] gyro_roll_calibration_value= "); 
+            sp("[initializeIMU_2] gyro_roll_calibration_value= "); 
             spl(gyro_roll_calibration_value);
-            sp("[initializeIMU] speed override value= "); spl(speed);    
-            sp("[initializeIMU]: Balance value. NOTE - this is the balance value only if the robot is standing upright: ");
+            sp("[initializeIMU_2] speed override value= "); spl(speed);    
+            sp("[initializeIMU_2]: Balance value. NOTE - this is the balance value only if the robot is standing upright: ");
             spl(balance_calibration_value);
             sp("[initializeIMU]: acc_calibration_value currently set to ");
             spl(acc_calibration_value);
         } //if
         else
         {     
-            sp("[initializeIMU] Wrong Who Am I responce: 0x");
+            sp("[initializeIMU_2] Wrong Who Am I response: 0x");
             if (lowByte<16)Serial.print("0");
             spl(lowByte, HEX);
-            spl("[initializeIMU] Initialization of IMU failed");    
+            spl("[initializeIMU_2] Initialization of IMU failed");    
         } //else
     } //if
     else
     {
-        sp("[initializeIMU] MPU-6050 query returned error code ");
+        sp("[initializeIMU_2] MPU-6050 query returned error code ");
         spl(error);
-        spl("[initializeIMU] ERROR! Robot will not be able to balance");
+        spl("[initializeIMU_2] ERROR! Robot will not be able to balance");
     } //else
-    spl("[initializeIMU] IMU initialization complete. Ending FreeRTOS task thread");
+    spl("[initializeIMU_2] IMU initialization complete. Ending FreeRTOS task thread");
     imuReady = true;
     //vTaskDelete( NULL );
-*/      
-} //initializeIMU()
+
+} //initializeIMU_2()
 /***********************************************************************************************************
  This function configures the MPU6050 using settings recommended by Joop Brokking
  ***********************************************************************************************************/
@@ -1709,34 +1607,48 @@ void setup()
     Serial.begin(115200); // Open a serial connection at 115200bps
     Serial.println("");
     LINE("[setup] Start of sketch. Source code line: ", __LINE__);
+        timeline();
     sp("[setup] PIN attached to onboard LED = "); spl(LED_BUILTIN);
-    pinMode(LED_BUILTIN, OUTPUT); // Take control on onbaord LED
+    pinMode(LED_BUILTIN, OUTPUT); // Take control on onboard LED
     writeLED(false); // Turn onboard LED off
     display_Running_Sketch(); // Show environment details in console
 //    Serial.setDebugOutput(true); // http://esp8266.github.io/Arduino/versions/2.0.0/doc/reference.html
+        timeline();
     for(uint8_t t = 1; t > 0; t--) // Allow time for ESP32 serial to initialize // was 4 loops, but sped it up
     {
         spf("[setup] Boot wait %d...\r\n", t); // Count down message to console
         Serial.flush(); // Wait for message to clear buffer
         delay(200); // Allow time to pass   // was 1000 msec/loop, but sped it up
     } //for   
+        timeline();
     startI2Cone(); // Scan the first I2C bus for LCD
+        timeline();
     startI2Ctwo(); // Scan the second I2C bus for MPU   AM: This is the issue
+        timeline();
     initializeLCD(); // Initialize the Open Smart 1602 LCD Display
+        timeline();
     sendLCD("Boot Sequence",LINE1); // Boot message to LCD line 1
     spl("[setup] Initialize IMU part 1");
     sendLCD("Init IMU part 1",LINE2); // Send more boot message to LCD line 2
+        timeline();
     initializeIMU_1();
+        timeline();
     sendLCD("Init Motors",LINE2); // Send more boot message to LCD line 2
+        timeline();
     initializeMotorControllers(); // Initialize the motor controllers
+        timeline();
     sendLCD("Start WiFi",LINE2); // Starting WiFi message to LCD line 2
     startWiFi(); // Start WiFi and connect to AP
+        timeline();
     startDNS(); // Start domain name service
     sendLCD("Start Webserver",LINE2); // Starting Webserver message to LCD line 2
+        timeline();
     startWebServer(); // Start web service 
     sendLCD("Start Websockets",LINE2); // Starting Websockets message to LCD line 2
+        timeline();
     startWebsocket(); // Include libaries in Websockets.h missing. Need to fix this.
     sendLCD("Monitor Socket",LINE2); // Send more boot message to LCD line 2
+        timeline();
     xTaskCreatePinnedToCore(monitorWebsocket, // Create FreeRTOS task. This will monitor websocket activity in a parallel thread
         "monitorWebsocket", // String with name of task for debug purposes
         10000, // Stack size in words. Tried lower number but causes reboots
@@ -1745,6 +1657,7 @@ void setup()
         &monWebSocket, // Task handle
         0); // Specify which of the two CPU cores to pin this task to
     sendLCD("Monitor Web",LINE2); // Send more boot message to LCD line 2
+        timeline();
     xTaskCreatePinnedToCore(monitorWeb, // Create FreeRTOS task. This will monitor web activity in a parallel thread
         "monitorWeb", // String with name of task for debug purposes
         10000, // Stack size in words. Tried lower number but causes reboots
@@ -1754,7 +1667,9 @@ void setup()
         0); // Specify which of the two CPU cores to pin this task to
     spl("[setup] Initialize IMU part 2");
     sendLCD("Init IMU part 2",LINE2); // Send more boot message to LCD line 2
+        timeline();
     initializeIMU_2();
+        timeline();
     sendLCD("Balance Task",LINE2); // Send more boot message to LCD line 2
     
 /*
@@ -1769,6 +1684,7 @@ void setup()
     sendLCD(ipToString(WiFi.localIP()),LINE1); // Send IP address to LCD line 1
     sendLCD("Version: " + my_ver,LINE2); // Send version of code to LCD line 2
     startTimer0();
+        timeline();
     spl("[setup] initialization process complete");
     loop_timer = micros() + LoopDelay; // Set the loop_timer variable at the next end loop time
 
@@ -2033,8 +1949,10 @@ void balanceRobot()
         else // restructure conditional so we don't have a brief wrong setting
         {
             noInterrupts(); // ensure interrupt can't happen when only one wheel is updated
-            throttle_left_motor = left_motor;   
+            throttle_left_motor = left_motor; 
+            throttle_left_motor_memory = 0;           // force new speed into immediate effect  
             throttle_right_motor = right_motor; 
+            throttle_right_motor_memory = 0;          // force new speed into immediate effect  
             interrupts();                           
         } //else
         // do some debug output to serial monitor to see whats going on
