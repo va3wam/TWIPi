@@ -85,6 +85,7 @@ void loop()
           -add crude table of contents at top of file to help find routines in source code
           -simplify the I2C bus scan output,  discarding double dots.
           -do quicker speed changes by having balanceRobot zero the throttle_*_motor_memory variables
+          -create LINET function that outputs string argument, followed by source code line number and milis timestamp
   2.2.7   2018-12-11 -add crude compensation for both gyro and accel angle measurements, because reading were off
           by 9 degees. also, gyro and accel don't agree - off by about 1.5 degrees
           -change bot fast speed control from 250 to 300 due to stalling motors
@@ -154,11 +155,11 @@ void loop()
 /***********************************************************************************************************
  Debug printing shortcuts.
  ***********************************************************************************************************/
+#define LINET(name) sp(name); sp(" Line:");sp(__LINE__);sp(" millis:");spl(millis());
 #define LINE(name,val) Serial.print(name); Serial.print(". Code Line: "); Serial.println(val); // Debug macro 
                                                                                                // prints 
                                                                                                // current 
-// simple timestamp at a particular line to examine boot timing...                             // code line
-#define timeline() sp("===== timestamp at LINE "); sp(__LINE__); spc; spl(millis());
+                                                                                               // code line
 #define sp Serial.print // Shortform print no carrige return
 #define spl Serial.println // Shortform print with carrige return
 #define spc Serial.print(", ") // Shortform print comma and space
@@ -338,8 +339,8 @@ int IMU_warmup_interval = 11000;    // length of IMU warmup period in millisecon
  ***********************************************************************************************************/
 #define LCD_NO_MESSAGE "" // Blank message to scroll old messages off screen 
 #define SCROLL 2 // Tell LCD to scroll full screen, both lines 
-#define LINE1 0 // Tell LCD to diplay message on line 1
-#define LINE2 1 // Tell LCD to diplay message on line 2
+#define LINE1 0 // Tell LCD to display message on line 1
+#define LINE2 1 // Tell LCD to display message on line 2
 const byte lcdAddr = 0x38; // LCD I2C address for old LCD 
 //const byte lcdAddr = 0x3F; // LCD I2C address for new LCD 
 const byte lcdCols = 16; // LCD number of characters in a row
@@ -452,7 +453,8 @@ void IRAM_ATTR onTimer0()
  ***********************************************************************************************************/
 void display_Running_Sketch()
 {                                 
-    LINE("[display_Running_Sketch] Displaying basic running environment. Source code line: ", __LINE__);
+//    LINE("[display_Running_Sketch] Displaying basic running environment. Source code line: ", __LINE__);
+    LINET("<display_Running_Sketch> Displaying basic running environment.");
     sp("[display_Running_Sketch] Sketch Name: ");spl(__FILE__);
     sp("[display_Running_Sketch] Sketch Version: "); spl(my_ver);
     sp("[display_Running_Sketch] Sketch compilation date: ");sp(__DATE__);sp(" at ");spl(__TIME__);
@@ -465,7 +467,7 @@ void display_Running_Sketch()
  ***********************************************************************************************************/
 void writeLED(bool LEDon)
 {
-    LINE("[writeLED] write value to LED. Source code line: ", __LINE__);
+    LINET("<writeLED> write value to LED.");
     LEDStatus = LEDon; // Track status of LED
     if (LEDon) // If request is to turn LED on
     {
@@ -489,8 +491,9 @@ void writeLED(bool LEDon)
  ***********************************************************************************************************/
 void startI2Cone()
 {
-    LINE("[startI2Cone] Initialize I2C bus. Source code line: ", __LINE__);
-    Wire.begin(SDA1,SCL1,400000); // 400KHz, uppder speed limit for ESP32 I2C
+    LINET("[startI2Cone] Initialize I2C bus.");
+    Wire.begin(SDA1,SCL1,400000); // 400KHz, upper speed limit for ESP32 I2C
+    sp("[startI2Cone] Active bus addresses: ");
     uint8_t cnt=0;
     for(uint8_t i=0;i<128;i++)
     {
@@ -535,8 +538,9 @@ void startI2Cone()
  ***********************************************************************************************************/
 void startI2Ctwo()
 {
-    LINE("[startI2Ctwo] Initialize I2C bus. Source code line: ", __LINE__);
+    LINET("<startI2Ctwo> Initialize I2C bus.");
     Wire1.begin(SDA2,SCL2,400000); // 400KHz, upper speed limit for ESP32 I2C
+    sp("[startI2Ctwo] Active bus addresses: ");
     uint8_t cnt=0;
     for(uint8_t i=0;i<128;i++)
     {
@@ -577,7 +581,7 @@ void startI2Ctwo()
  ***********************************************************************************************************/
 void initializeLCD()                                             
 {
-    LINE("[initializeLCD] Initialize LCD. Source code line: ", __LINE__);
+    LINET("<initializeLCD> Initialize LCD.");
     lcd.clear(); // Clear the LCD screen
     lcd.init(); // Initialize the LCD object 
     lcd.backlight(); // Turn on the LCD backlight
@@ -590,7 +594,7 @@ void initializeLCD()
  ***********************************************************************************************************/
 void sendLCD(String LCDmsg, byte LCDline)
 {
-    LINE("[sendLCD] Send text to LCD. Source code line: ", __LINE__);
+    LINET("<sendLCD> Send text to LCD.");
     byte textLen = LCDmsg.length(); // Length of message to send
     byte LCDcolumn = 0; // Starting column of message 
     if(LCDline > 1) LCDline=1; // Ensure line argument is not too large                                   
@@ -630,7 +634,7 @@ void sendLCD(String LCDmsg, byte LCDline)
  ***********************************************************************************************************/
 void scrollLCD(String LCDmsg, byte LCDline)
 {
-    LINE("[scrollLCD] Scrolling text on LCD. Source code line: ", __LINE__);
+    LINET("<scrollLCD> Scrolling text on LCD.");
     byte textLen = LCDmsg.length(); // Length of message to send
     byte LCDcolumn = 0; // Starting column of message 
     if(LCDline > 1) LCDline=1; // Ensure line argument is not too large                                   
@@ -653,7 +657,7 @@ void scrollLCD(String LCDmsg, byte LCDline)
  ***********************************************************************************************************/
 void flashLCD()   
 {
-    LINE("[flashLCD] Flashing back light of LCD. Source code line: ", __LINE__);
+    LINET("<flashLCD> Flashing back light of LCD.");
     for (byte cnt = 0; cnt < 4; cnt++)      // max was 10, but sped it up
     {
         lcd.backlight(); // Turn on the LCD backlight
@@ -670,7 +674,7 @@ void flashLCD()
  ***********************************************************************************************************/
 void hexdump(const void *mem, uint32_t len, uint8_t cols = 16) 
 {
-    LINE("[hexdump] HEX dump from websocket. Source code line: ", __LINE__);
+    LINET("<hexdump> HEX dump from websocket.");
     const uint8_t* src = (const uint8_t*) mem;
 	Serial.printf("\n[hexdump] Address: 0x%08X len: 0x%X (%d)", (ptrdiff_t)src, len, len);
 	for(uint32_t i = 0; i < len; i++) 
@@ -704,7 +708,7 @@ void hexdump(const void *mem, uint32_t len, uint8_t cols = 16)
  ***********************************************************************************************************/
 void startWiFi()
 {
-    LINE("[startWiFi] Scanning/connecting to strongest known AP signal. Source code line: ", __LINE__);
+    LINET("<startWiFi> Scanning/connecting to strongest known AP signal.");
     //WiFi.mode();
     wifiMulti.addAP(ssid0, password); // Add Wi-Fi AP we may be able to connect to
     wifiMulti.addAP(ssid1, password); // Add Wi-Fi AP we may be able to connect to
@@ -712,6 +716,7 @@ void startWiFi()
     wifiMulti.addAP(ssid3, password); // Add Wi-Fi AP we may be able to connect to
     wifiMulti.addAP(ssid4, password4); // Add Wi-Fi AP we may be able to connect to - Doug's WiFi
     spl("[startWiFi] Connecting Wifi"); 
+    sp("[startWifi] initial wifiMulti.run() returned ");
     sp(wifiMulti.run());
     while(wifiMulti.run() != WL_CONNECTED) 
     {                                                               
@@ -736,7 +741,7 @@ void startWiFi()
  *************************************************************************************************************************************/
 void startDNS()
 {
-    LINE("[startDNS] Start the DNS service. Source code line: ", __LINE__);
+    LINET("<startDNS> Start the DNS service.");
     if (mdns.begin("esp32")) // Start mDNS service
     {
         sp("[startDNS] MDNS responder started. ");
@@ -763,7 +768,7 @@ void startDNS()
  ***********************************************************************************************************/
 volatile void handleRoot()
 {
-    LINE("[handleRoot] handleRoot web service event triggered. Source code line: ", __LINE__);
+    LINET("<handleRoot> handleRoot web service event triggered.");
     server.send_P(200, "text/html", INDEX_HTML); // Send the HTML page defined in INDEX_HTML
     spl("[handleRoot] Home page  requested via HTTP request on port 80. Sent EEPROM defined document page to client");                              
    
@@ -775,7 +780,7 @@ volatile void handleRoot()
  ***********************************************************************************************************/
 volatile void handleNotFound()
 {
-    LINE("[handleNotFound] File not found web service event triggered. Source code line: ", __LINE__);
+    LINET("<handleNotFound> File not found web service event triggered.");
     String message = "File Not Found\n\n"; // Build string with 404 file not found message
         message += "URI: ";
         message += server.uri();
@@ -798,7 +803,7 @@ volatile void handleNotFound()
  ***********************************************************************************************************/
 void startWebServer()
 {
-    LINE("[startWebServer] Starting Webserver service. Source code line: ", __LINE__);
+    LINET("<startWebServer> Starting Webserver service.");
     server.on("/", handleRoot); // Attach function for handling root page (/)
     server.on ( "/inline", []() // Attach simple inline page to test web server
     {
@@ -815,7 +820,7 @@ void startWebServer()
  ***********************************************************************************************************/
 void startWebsocket()
 {
-    LINE("[startWebsocket] Starting Websocket service. Source code line: ", __LINE__);
+    LINET("<startWebsocket> Starting Websocket service.");
     webSocket.begin();
     webSocket.onEvent(webSocketEvent);    
 
@@ -826,7 +831,7 @@ void startWebsocket()
  ***********************************************************************************************************/
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) 
 {
-    LINE("[webSocketEvent] Websocket event detected. Source code line: ", __LINE__);
+    LINET("<webSocketEvent> Websocket event detected.");
     if(JSON_DEBUG) // If JSON message debug flag set  
     {
         spf("[webSocketEvent] Event detected: "); // Show event details in terminal   
@@ -1333,7 +1338,7 @@ void sendClientVariableValue(uint8_t num, String variable)
  ***********************************************************************************************************/
 String ipToString(IPAddress ip)
 {
-    LINE("[ipToString] Converting IP address to String. Source code line: ", __LINE__);
+    LINET("<ipToString> Converting IP address to String.");
     String s="";
     for (int i=0; i<4; i++)
     s += i  ? "." + String(ip[i]) : String(ip[i]);
@@ -1359,12 +1364,9 @@ String ipToString(IPAddress ip)
 void initializeIMU_1()
 {
     byte error, lowByte;
-//    byte highByte;
-//    int address;
-    int receive_counter;
-    int temp,tcnt1, tcnt2;
     String tmsg;
-    LINE("[initializeIMU_1] Initializing the MPU6050 IMU part 1. Source code line: ", __LINE__);
+
+    LINET("<initializeIMU_1> Initializing the MPU6050 IMU part 1.");
     sp("[initializeIMU_1]: Checking to see if the IMU is found on I2Ctwo at expected I2C address of 0x");
     spl(MPU_address,HEX);
     Wire1.beginTransmission(MPU_address);
@@ -1399,7 +1401,7 @@ void initializeIMU_1()
         } //if(lowByte)...
 
         IMU_warmup_start = millis() ; // remember when the IMU warmup started for initializeIMU_2, called later
-                                      // just fall out of initializeIMU_1, &d wait for InitializeIMU_2 to be called
+                                      // just fall out of initializeIMU_1, & wait for InitializeIMU_2 to be called
     }   // if(error)...
 
     else   // if IMU didn't respond at expected I2C address
@@ -1420,21 +1422,17 @@ void initializeIMU_1()
 
 void initializeIMU_2()
 {
-    byte error, lowByte;
-//    byte highByte;
-//    int address;
     int receive_counter;
     int temp,tcnt1, tcnt2;
     String tmsg;
     
-    LINE("[initializeIMU_2] Initializing the MPU6050 IMU part 2. Source code line: ", __LINE__);
-    sp("[initializeIMU_2]: Continuing IMU warmup and calibration");
+    LINET("<initializeIMU_2> Initializing the MPU6050 IMU part 2.");
+    sp("[initializeIMU_2]: Continuing IMU warmup and calibration for address ");
     spl(MPU_address,HEX);
-    temp = millis() - IMU_warmup_start;            // this is how many msec IMU has been warming up
-
-    if( temp < IMU_warmup_interval)                // if there's still time left in the warmup      
+    temp = millis() - IMU_warmup_start;         // this is how many msec IMU has been warming up
+    if( temp < IMU_warmup_interval)             // if there's still time left in the warmup      
     {   for(int x = IMU_warmup_interval - temp; x > 0; x--)   // then kill time until warmup's done
-        {  if( x == (x & 0xFFFFFC00))                      // if we're roughly at a one second multiple (1024)...
+        {  if( x == (floor(x / 1000)) * 1000)          // if we're at a one second multiple...
            {  tmsg = "[initializeIMU_2] Delay countdown in msec: " + String(x);
               spl(tmsg);                        // display time to go on console in msec
            } // if 
@@ -1503,7 +1501,7 @@ void initializeIMU_2()
             sp("[initializeIMU]: acc_calibration_value currently set to ");
             spl(acc_calibration_value);
  
-    spl("[initializeIMU_2] IMU initialization complete. Ending FreeRTOS task thread");
+    spl("[initializeIMU_2] IMU initialization complete.");
     imuReady = true;
     //vTaskDelete( NULL );
 
@@ -1513,7 +1511,7 @@ void initializeIMU_2()
  ***********************************************************************************************************/
 void set_gyro_registers()
 {
-    LINE("[set_gyro_registers] Configure the MPU6050. Source code line: ", __LINE__);
+    LINET("<set_gyro_registers> Configure the MPU6050.");
     spl("[set_gyro_registers] Wake up MPU"); // By default the MPU-6050 sleeps. So we have to wake it up.
 
     Wire1.beginTransmission(MPU_address); // Start communication with the address found during search.
@@ -1551,7 +1549,7 @@ void set_gyro_registers()
  ***********************************************************************************************************/
 void read_mpu_6050_data()                                              
 {
-    LINE("[read_mpu_6050_data] Read MPU6050 registers. Source code line: ", __LINE__);
+    LINET("<read_mpu_6050_data> Read MPU6050 registers.");
     Wire1.beginTransmission(MPU_address); // Start communicating with the MPU-6050
     Wire1.write(0x3B); // Send the requested starting register
     Wire1.endTransmission(); // End the transmission
@@ -1579,7 +1577,7 @@ void read_mpu_6050_data()
  ***********************************************************************************************************/
 void startTimer0()
 {
-    LINE("[startTimer0] Initialize and start timer0. Source code line: ", __LINE__);
+    LINET("<startTimer0> Initialize and start timer0.");
     timer0 = timerBegin(timer_number_0, timer_prescaler_0, timer_cnt_up); // Pointer to hardware timer 0
     timerAttachInterrupt(timer0, &onTimer0, true); // Bind onTimer function to hardware timer 0
     timerAlarmWrite(timer0, 20, true); // Interrupt generated is of edge type not level (third arg) at 
@@ -1594,7 +1592,7 @@ void startTimer0()
  ***********************************************************************************************************/
 void initializeMotorControllers()
 {
-    LINE("[initializeMotorControllers] Set up GPIO pins connected to motors. Source code line: ", __LINE__);
+    LINET("<initializeMotorControllers> Set up GPIO pins connected to motors.");
     pinMode(pin_left_dir,OUTPUT); // Note that our motor control pins are Outputs
     pinMode(pin_left_step,OUTPUT);
     pinMode(pin_right_dir,OUTPUT);
@@ -1613,49 +1611,35 @@ void setup()
 {
     Serial.begin(115200); // Open a serial connection at 115200bps
     Serial.println("");
-    LINE("[setup] Start of sketch. Source code line: ", __LINE__);
-        timeline();
+    LINET("<setup> Start of sketch.");
     sp("[setup] PIN attached to onboard LED = "); spl(LED_BUILTIN);
     pinMode(LED_BUILTIN, OUTPUT); // Take control on onboard LED
     writeLED(false); // Turn onboard LED off
     display_Running_Sketch(); // Show environment details in console
 //    Serial.setDebugOutput(true); // http://esp8266.github.io/Arduino/versions/2.0.0/doc/reference.html
-        timeline();
     for(uint8_t t = 1; t > 0; t--) // Allow time for ESP32 serial to initialize // was 4 loops, but sped it up
     {
         spf("[setup] Boot wait %d...\r\n", t); // Count down message to console
         Serial.flush(); // Wait for message to clear buffer
         delay(200); // Allow time to pass   // was 1000 msec/loop, but sped it up
     } //for   
-        timeline();
     startI2Cone(); // Scan the first I2C bus for LCD
-        timeline();
     startI2Ctwo(); // Scan the second I2C bus for MPU   AM: This is the issue
-        timeline();
     initializeLCD(); // Initialize the Open Smart 1602 LCD Display
-        timeline();
     sendLCD("Boot Sequence",LINE1); // Boot message to LCD line 1
     spl("[setup] Initialize IMU part 1");
     sendLCD("Init IMU part 1",LINE2); // Send more boot message to LCD line 2
-        timeline();
     initializeIMU_1();
-        timeline();
     sendLCD("Init Motors",LINE2); // Send more boot message to LCD line 2
-        timeline();
     initializeMotorControllers(); // Initialize the motor controllers
-        timeline();
     sendLCD("Start WiFi",LINE2); // Starting WiFi message to LCD line 2
     startWiFi(); // Start WiFi and connect to AP
-        timeline();
     startDNS(); // Start domain name service
     sendLCD("Start Webserver",LINE2); // Starting Webserver message to LCD line 2
-        timeline();
     startWebServer(); // Start web service 
     sendLCD("Start Websockets",LINE2); // Starting Websockets message to LCD line 2
-        timeline();
     startWebsocket(); // Include libaries in Websockets.h missing. Need to fix this.
     sendLCD("Monitor Socket",LINE2); // Send more boot message to LCD line 2
-        timeline();
     xTaskCreatePinnedToCore(monitorWebsocket, // Create FreeRTOS task. This will monitor websocket activity in a parallel thread
         "monitorWebsocket", // String with name of task for debug purposes
         10000, // Stack size in words. Tried lower number but causes reboots
@@ -1664,7 +1648,6 @@ void setup()
         &monWebSocket, // Task handle
         0); // Specify which of the two CPU cores to pin this task to
     sendLCD("Monitor Web",LINE2); // Send more boot message to LCD line 2
-        timeline();
     xTaskCreatePinnedToCore(monitorWeb, // Create FreeRTOS task. This will monitor web activity in a parallel thread
         "monitorWeb", // String with name of task for debug purposes
         10000, // Stack size in words. Tried lower number but causes reboots
@@ -1674,9 +1657,7 @@ void setup()
         0); // Specify which of the two CPU cores to pin this task to
     spl("[setup] Initialize IMU part 2");
     sendLCD("Init IMU part 2",LINE2); // Send more boot message to LCD line 2
-        timeline();
     initializeIMU_2();
-        timeline();
     sendLCD("Balance Task",LINE2); // Send more boot message to LCD line 2
     
 /*
@@ -1691,8 +1672,7 @@ void setup()
     sendLCD(ipToString(WiFi.localIP()),LINE1); // Send IP address to LCD line 1
     sendLCD("Version: " + my_ver,LINE2); // Send version of code to LCD line 2
     startTimer0();
-        timeline();
-    spl("[setup] initialization process complete");
+    LINET("<setup> initialization process complete");
     loop_timer = micros() + LoopDelay; // Set the loop_timer variable at the next end loop time
 
 } //setup()
