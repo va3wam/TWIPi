@@ -47,6 +47,7 @@ void loop()
 #include <Wire.h>                 // Needed for I2C communication
 #include <LiquidCrystal_I2C.h>    // https://github.com/marcoschwartz/LiquidCrystal_I2C
 #include <ArduinoJson.h>          // https://github.com/bblanchon/ArduinoJson
+
 /***********************************************************************************************************
   Synopsis:
   This is the main sketch for the TWIPi robot. 
@@ -54,7 +55,7 @@ void loop()
   NOTE!!! /Users/andrewmitchell/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-i2c.c
   has custom lines in it that differ from the ESP-IDF stable release. Make sure that these lines are 
   maintained when updating to the latest PlatformIO ESP-IDF files. Failure to do so will result in unrelaible
-  I2C and hardware timer behavior. See the clsojng comments for issue https://github.com/va3wam/TWIPi/issues/14
+  I2C and hardware timer behavior. See the closing comments for issue https://github.com/va3wam/TWIPi/issues/14
   for full details.
 
   Environment:
@@ -70,7 +71,7 @@ void loop()
   History
   Version YYYY-MM-DD Description
 */   
-  String my_ver = "2.2.8";
+  String my_ver = "2.2.9";
 /*  char my_ver[] = "2.2.1"; // Semantic Versioning (https://semver.org/)
 
     Given a version number MAJOR.MINOR.PATCH, increment the:
@@ -79,13 +80,37 @@ void loop()
       PATCH version when you make backwards-compatible bug fixes.
 
   ------- ---------- ---------------------------------------------------------------------------------------
-  2.2.8   2018-01-01 - return IMU warmup to 11 seconds so it's stable before calibration, 
+  2.2.9   2019-01-04 - generate some telemetry data related to balancing every 4 milliseconds
+          -re-enable the I value in PID - it had been previously commented out
+          -todo: accelerometer calibration value? 
+             remove crude compensation by +8 -done
+             remove or fix pid_error_temp adjustment that's asymmetrical -done. removed
+             reduce Pid_I_gain -done, from 1.2 to .4
+             reduce Pid_D_gain - done, from 30 to 10
+             consider re-introducing I_mem fading - deferred until more telemmetry analysed
+             change bot_fast back to 250 for higher top end speed - test other changes first
+             minimize impact of unstable angle_acc number. [only in anti drift calc (.996 x + .004 y)]
+             clean out numchuk related code - mostly done
+             set up balance point by:
+                -getting bot at it's balance point (build a nifty jig?)
+                -note value displayed on startup after text: "[initializeIMU_2]: Balance value...."
+                -using this value in startWiFi() for MAC address 30:AE:A4:37:54:F8 for acc_calibration_value
+                -this will result in the balance goal of zero degrees accurately reflecting off-center possibility
+             move ISR param update until after the 4 Msec sync spin, for consistency (but a delay?)
+             count step pulses per 4msec loop
+             figure out why telemetry has long gaps of multiple 4msec intervals. PC? ESP32? algorithm?
+             convert LINE() macro calls to LINE_TIME() which logs text arg and appends source code line and millis() - done
+             allow robot to continue and balance if it can't find a WiFi network. se variable WiFi_active
+             recreate the original "linear behaviour" for PID > wheel control mapping
+  2.2.8   2019-01-01 - return IMU warmup to 11 seconds so it's stable before calibration, 
           -split IMS initialization into two parts to allow network startup to run in parallel
           -add timeline macro to output timestamps + line numbers during setup()
           -add crude table of contents at top of file to help find routines in source code
           -simplify the I2C bus scan output,  discarding double dots.
           -do quicker speed changes by having balanceRobot zero the throttle_*_motor_memory variables
           -create LINET function that outputs string argument, followed by source code line number and milis timestamp
+          -convert output of URL in startDNS to escape slashes so compiler won't think they're comments
+          -move initializeIMU_1 earlier in setup to maximize overlapping processing, and minimize boot time
   2.2.7   2018-12-11 -add crude compensation for both gyro and accel angle measurements, because reading were off
           by 9 degees. also, gyro and accel don't agree - off by about 1.5 degrees
           -change bot fast speed control from 250 to 300 due to stalling motors
@@ -155,20 +180,23 @@ void loop()
 /***********************************************************************************************************
  Debug printing shortcuts.
  ***********************************************************************************************************/
-#define LINET(name) sp(name); sp(" Line:");sp(__LINE__);sp(" millis:");spl(millis());
-#define LINE(name,val) Serial.print(name); Serial.print(". Code Line: "); Serial.println(val); // Debug macro 
-                                                                                               // prints 
-                                                                                               // current 
-                                                                                               // code line
-#define sp Serial.print // Shortform print no carrige return
-#define spl Serial.println // Shortform print with carrige return
-#define spc Serial.print(", ") // Shortform print comma and space
-#define spf Serial.printf // Shortform formatted printing with no line return
+
+#define LINE_TIME(name) sp(name); sp(" Line:");sp(__LINE__);sp(" millis:");spl(millis());
+// convention is that on main entry to a routine, the text arg is in the format:
+//      "<name of routine> general function."
+// for subsequent calls providing more information, text arg is:
+//      " [name of routine] event summary."
+// note the leading space in above text arg, which indents entries other than main routine entrypoints
+
+#define sp Serial.print                     // Shortform print no carrige return
+#define spl Serial.println                  // Shortform print with carrige return
+#define spc Serial.print(", ")              // Shortform print comma and space
+#define spf Serial.printf                   // Shortform formatted printing with no line return
 #define spdl(label,val) sp(label); spl(val) // Displays one labelled variable, ending with new-line 
                                             // example: spdl(" param2= ",param2);     
-#define spd(label,val) sp(label); sp(val) // Suitable for displaying multiple variables per line
-                                          // example: spd("left motor= ",left_motor); 
-                                          // spdl("  right motor= ",right_motor);
+#define spd(label,val) sp(label); sp(val)   // Suitable for displaying multiple variables per line
+                                            // example: spd("left motor= ",left_motor); 
+                                            // spdl("  right motor= ",right_motor);
 /***********************************************************************************************************
  Defines needed when using PLatformIO in Microsoft Visual Studio Code instead of the native Adduino IDE
  ***********************************************************************************************************/
@@ -207,39 +235,43 @@ bool telClientConnected = false;
 TaskHandle_t monWebSocket; // Handle for task that monitors webSockets
 TaskHandle_t monWeb; // Handle for task that monitors HTTP 
 TaskHandle_t monBalance; // Handle for task that balances robot
-long cntBalance, cntLoop;
+long cntBalance, cntLoop;    // not re-initialized, so not too useful
 
 void flashLCD();  // from http://forum.arduino.cc/index.php?topic=42835.0
 /***********************************************************************************************************
- Define PID and motor control variables and constants
+ Define motor control variables and constants
  ***********************************************************************************************************/
 long pcnt; // This is used for some JSON message ping test timing
-int acc_calibration_value; // Balance point of robot when standing at 90 degrees.
-                           // To get this value stand the robot upright at 90 degrees
-                           // and watch the serial trace during boot up. Note that
-                           // the of this variable is set in the startWiFi()
-                           // function based on MAC address of ESP32
-                           // Gets set during start up.
+int acc_calibration_value; // Balance point of robot when balancing on its wheels (may not be vertical)
+                           // To get this value, get the robot balancing, and watch the serial trace during boot up.
+                           // Note that this variable is set in startWiFi() based on MAC address of ESP32.
+                           // The MAC address read from the hardware selects one of these values:
+int balance_37_54_f8 = 0;  // TWIPi MAC address: 30:AE:A4:37:54:F8 has this acc_calibration_value 
+
 const volatile int speed = -1; // for initial testing of interrupt driven steppers
                                // speed = -1 enables IMU based balancing. 
-                               // speed = n enables fixed forward speed interval of n, 0 
-                               // is brakes on
+                               // speed = n enables fixed forward speed interval of n
+                               //         0 is brakes on
 const int bot_slow = 2300; // # of interrupts between steps at slowest workable bot speed
 const int bot_fast = 300; // # of interrupts between steps at fastest workable bot speed
-const float PID_I_fade = .80; // How much of pid_i_mem history to retain
+
+/***********************************************************************************************************
+ Define PID control variables and constants
+ ***********************************************************************************************************/
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Various PID settings
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // was 30, 1.2, 30 before 2018-12-10
 // back to above 2018-12-11
-float pid_p_gain = 30; // Gain setting for the P-controller (15)
-float pid_i_gain = 1.2; // Gain setting for the I-controller (1.5)
-float pid_d_gain = 30; // Gain setting for the D-controller (30)
-float turning_speed = 30; // Turning speed (20)
-float max_target_speed = 150; // Max target speed (100)
+// based on telemetry, on jan 7: 15, 0.4, 10
+float pid_p_gain = 15;          // Gain setting for the P-controller (15)
+float pid_i_gain = 0.4;         // Gain setting for the I-controller (1.5)
+float pid_d_gain = 10;          // Gain setting for the D-controller (30)
 const long usec_per_t0_int = 20; // Number of microseconds between t0 timer interrupts
-const int pid_max = 400; // Upper bound for pid values
-const int pid_min = -400; // Lower bound for pid values
+const int pid_max = 400;        // Upper bound for pid values
+const int pid_min = -400;       // Lower bound for pid values
+const float PID_I_fade = .80;   // How much of pid_i_mem history to retain
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Define the GPIO pins that perform functions on DVR8825 motor controller. Changed as follows:
 // Left step moved from 12 to 32
@@ -255,32 +287,24 @@ const int pid_min = -400; // Lower bound for pid values
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Declaring global variables and setting some values (YABR cut and paste)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-byte start, received_byte=0, low_bat;
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// received_byte came from serial stuff I've omitted - suspect it is numchuk controller
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+byte start;    // controls whether or not we've moving wheels to attempt to balance the robot
+               // initially 0, set to 1 when robot angle is close to zero, set back to 0 if offset exceeds 30 degrees
 volatile int left_motor, throttle_left_motor, throttle_counter_left_motor, throttle_left_motor_memory;
 volatile int right_motor, throttle_right_motor, throttle_counter_right_motor, throttle_right_motor_memory;
-int battery_voltage;
 int receive_counter;
 int gyro_pitch_data_raw, gyro_yaw_data_raw, gyro_roll_data_raw, accelerometer_data_raw;
 long gyro_yaw_calibration_value, gyro_pitch_calibration_value, balance_calibration_value, gyro_roll_calibration_value;
 unsigned long loop_timer;
-float angle_gyro, angle_acc, angle, self_balance_pid_setpoint;
-float pid_error_temp, pid_i_mem, pid_setpoint, gyro_input, pid_output, pid_last_d_error;
+float angle_gyro, angle_acc, angle;
+float pid_error_temp, pid_i_mem, gyro_input, pid_output, pid_last_d_error;
 float pid_output_left, pid_output_right;
 float hold, hold1, hold2, hold3, hold4, hold5;
-int vertical_calibration; // This is calculated and displayed if speed == 0, which puts the brakes on
-volatile float ftemp; // Temp replacement calculation to replace onestep
-long mics, loop_mics, last_millis; // Measure length of loop, and print occasionally
+long mics, loop_mics, last_millis; // Measure length of balanceRobot() loop, and print occasionally
 int t0_count;
-int dump_count; // Need to differentiate multiple dumps form same compile
 long t,t_old,d;
 int millis_now, i=1;
 long mil, mic;
 volatile long int_time;
-volatile int h_flag; // Flag to capture and hold one vector of debug interrupt times
 
 /***********************************************************************************************************
  Define on-board LED definitions. GPIO13 is where the onboard LED is located for the HUZZAH32 board. Other 
@@ -290,7 +314,7 @@ const int LEDPIN = 15; // GPIO pin the the onboard LED is connected to
 bool LEDStatus; // Current LED status
 const char LEDON[] = "ledon"; // Turn onboard LED ON
 const char LEDOFF[] = "ledoff"; // Turn onboard LED OFF
-static void writeLED(bool); // Define function that sets the onbard LED, accepts 0 or 1
+static void writeLED(bool); // Define function that sets the onboard LED, accepts 0 or 1
 
 /***********************************************************************************************************
  Define network objects and services.
@@ -322,7 +346,7 @@ byte I2C_UNKNOWN = false; // Flag if unknown device found on I2C bus
 #define MPU_address 0x68 // MPU-6050 I2C address. Note that AD0 pin on the board cannot be left floating and 
                          // must be connected to the Arduino ground for address 0x68 or be connected to VDC 
                          // for address 0x69.
-byte IMU_FOUND = false; // Flag to see if MPU found on I2C bus
+bool IMU_FOUND = false; // Flag to see if MPU found on I2C bus
 int acc_x; // Read raw low and high byte to the MPU acc_x register
 int acc_y; // Read raw low and high byte to the MPU acc_y register
 int acc_z; // Read raw low and high byte to the MPU acc_z register
@@ -330,7 +354,7 @@ int gyro_x; // Read raw low and high byte to the MPU gyro_x register
 int gyro_y; // Read raw low and high byte to the MPU gyro_y register
 int gyro_z; // Read raw low and high byte to the MPU gyro_z register
 int temperature; // Read raw low and high byte to the MPU temperature register
-volatile boolean imuReady = false; // flag used to note when imu boot sequence is complete
+volatile bool imuReady = false; // flag used to note when imu boot sequence is complete
 int IMU_warmup_start;               // used to track beginning of IMU warmup period
 int IMU_warmup_interval = 11000;    // length of IMU warmup period in milliseconds
 
@@ -355,14 +379,12 @@ String LCDmsg1 = ""; // Track message displayed in line 2 of LCD
  Define main loop workflow related variables
  ***********************************************************************************************************/
 #define JSON_DEBUG true // Flag to control JSON debug messages
-#define LoopDelay 100000 // This is the target time in milliseconds that each
-                         // iteration of Loop() should take. YABR used 4000 but
-                         // testing shows that the ESP8266 cannot handle that
-                         // speed but it can handle 20000. All angle calcuations
-                         // will need to take this into account when porting from
-                         // the YABR code base. 
+#define LoopDelay 4000 // This is the target time in milliseconds that each iteration of balanceRobot() should take.
+                        // this is built into angle calculations, and can't be easily changed
+
 String sendTelemetry = "flagoff"; // Flag to control if balance telemetry data is sent 
                                   // to connected clients
+bool WiFi_active = false;   // flag to say whether or not attempy to connect to a known WiFi network was successful
 
 /***********************************************************************************************************
  Declare INDEX_HTML as a FLASH memory string containing a web page. Note that details on programming ESP32 
@@ -383,7 +405,6 @@ static const char INDEX_HTML[] = "<!DOCTYPE html> <html> <head> <meta charset=\"
  ***********************************************************************************************************/
 void IRAM_ATTR onTimer0() 
 {
-
     portENTER_CRITICAL_ISR(&timerMux); // Prevent anyone else from updating the variable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Left motor pulse calculations 
@@ -453,12 +474,11 @@ void IRAM_ATTR onTimer0()
  ***********************************************************************************************************/
 void display_Running_Sketch()
 {                                 
-//    LINE("[display_Running_Sketch] Displaying basic running environment. Source code line: ", __LINE__);
-    LINET("<display_Running_Sketch> Displaying basic running environment.");
-    sp("[display_Running_Sketch] Sketch Name: ");spl(__FILE__);
-    sp("[display_Running_Sketch] Sketch Version: "); spl(my_ver);
-    sp("[display_Running_Sketch] Sketch compilation date: ");sp(__DATE__);sp(" at ");spl(__TIME__);
-    spdl("[display_Running_Sketch] ESP32 SDK used: ", ESP.getSdkVersion());
+    LINE_TIME("<display_Running_Sketch> Displaying basic running environment.");
+    sp(" [display_Running_Sketch] Sketch Name: ");spl(__FILE__);
+    sp(" [display_Running_Sketch] Sketch Version: "); spl(my_ver);
+    sp(" [display_Running_Sketch] Sketch compilation date: ");sp(__DATE__);sp(" at ");spl(__TIME__);
+    spdl(" [display_Running_Sketch] ESP32 SDK used: ", ESP.getSdkVersion());
 } //display_Running_Sketch()
 
 /***********************************************************************************************************
@@ -467,17 +487,17 @@ void display_Running_Sketch()
  ***********************************************************************************************************/
 void writeLED(bool LEDon)
 {
-    LINET("<writeLED> write value to LED.");
+    LINE_TIME("<writeLED> write value to LED.");
     LEDStatus = LEDon; // Track status of LED
     if (LEDon) // If request is to turn LED on
     {
         digitalWrite(LEDPIN, 1); // Set LED GPIO HIGH, which turn the LED on
-        spl("[writeLED] Set LED GPIO HIGH (turn LED on)");
+        spl(" [writeLED] Set LED GPIO HIGH (turn LED on)");
     } //if
     else 
     {
         digitalWrite(LEDPIN, 0); // Set LED GPIO LOW, which turn the LED off
-        spl("[writeLED] Set LED GPIO LOW (turn LED off)");
+        spl(" [writeLED] Set LED GPIO LOW (turn LED off)");
     } //else
 
 } //writeLED()
@@ -491,9 +511,9 @@ void writeLED(bool LEDon)
  ***********************************************************************************************************/
 void startI2Cone()
 {
-    LINET("[startI2Cone] Initialize I2C bus.");
+    LINE_TIME("<startI2Cone> Initialize I2C bus.");
     Wire.begin(SDA1,SCL1,400000); // 400KHz, upper speed limit for ESP32 I2C
-    sp("[startI2Cone] Active bus addresses: ");
+    sp(" [startI2Cone] Active bus addresses: ");
     uint8_t cnt=0;
     for(uint8_t i=0;i<128;i++)
     {
@@ -512,18 +532,18 @@ void startI2Cone()
     } //for
 
     Serial.println();
-    Serial.print("[startI2Cone] Scan Completed, ");
+    Serial.print(" [startI2Cone] Scan Completed, ");
     Serial.print(cnt);
     Serial.println(" I2C Devices found.");
 
     if(cnt==0)
     {
-        Serial.print(String("[startI2Cone] ERROR! No I2C device found on I2Cone. Expected LCD at 0x38."));
+        Serial.print(String(" [startI2Cone] ERROR! No I2C device found on I2Cone. Expected LCD at 0x38."));
         LCD_FOUND = false;
     } //if
     else
     {
-        Serial.print(String("[startI2Cone] LCD found on I2Cone as expected at 0x38."));
+        spl(" [startI2Cone] LCD found on I2Cone as expected at 0x38.");
         LCD_FOUND = true;
     } //else
 
@@ -538,9 +558,9 @@ void startI2Cone()
  ***********************************************************************************************************/
 void startI2Ctwo()
 {
-    LINET("<startI2Ctwo> Initialize I2C bus.");
+    LINE_TIME("<startI2Ctwo> Initialize I2C bus.");
     Wire1.begin(SDA2,SCL2,400000); // 400KHz, upper speed limit for ESP32 I2C
-    sp("[startI2Ctwo] Active bus addresses: ");
+    sp(" [startI2Ctwo] Active bus addresses: ");
     uint8_t cnt=0;
     for(uint8_t i=0;i<128;i++)
     {
@@ -559,18 +579,18 @@ void startI2Ctwo()
     } //for
 
     Serial.println();
-    Serial.print("[startI2Ctwo] Scan Completed, ");
+    Serial.print(" [startI2Ctwo] Scan Completed, ");
     Serial.print(cnt);
     Serial.println(" I2C Devices found.");
 
     if(cnt==0)
     {
-        Serial.print("[startI2Ctwo] ERROR! No I2C device found on I2Ctwo. Expected MPU at 0x68.");
+        Serial.print(" [startI2Ctwo] ERROR! No I2C device found on I2Ctwo. Expected MPU at 0x68.");
         IMU_FOUND = false;
     } //if
     else
     {
-        Serial.print("[startI2Ctwo] LCD found on I2Ctwo as expected at 0x68.");
+        spl(" [startI2Ctwo] LCD found on I2Ctwo as expected at 0x68.");
         IMU_FOUND = true;
     } //else
 
@@ -581,7 +601,7 @@ void startI2Ctwo()
  ***********************************************************************************************************/
 void initializeLCD()                                             
 {
-    LINET("<initializeLCD> Initialize LCD.");
+    LINE_TIME("<initializeLCD> Initialize LCD.");
     lcd.clear(); // Clear the LCD screen
     lcd.init(); // Initialize the LCD object 
     lcd.backlight(); // Turn on the LCD backlight
@@ -594,7 +614,7 @@ void initializeLCD()
  ***********************************************************************************************************/
 void sendLCD(String LCDmsg, byte LCDline)
 {
-    LINET("<sendLCD> Send text to LCD.");
+    LINE_TIME("<sendLCD> Send text to LCD.");
     byte textLen = LCDmsg.length(); // Length of message to send
     byte LCDcolumn = 0; // Starting column of message 
     if(LCDline > 1) LCDline=1; // Ensure line argument is not too large                                   
@@ -634,7 +654,7 @@ void sendLCD(String LCDmsg, byte LCDline)
  ***********************************************************************************************************/
 void scrollLCD(String LCDmsg, byte LCDline)
 {
-    LINET("<scrollLCD> Scrolling text on LCD.");
+    LINE_TIME("<scrollLCD> Scrolling text on LCD.");
     byte textLen = LCDmsg.length(); // Length of message to send
     byte LCDcolumn = 0; // Starting column of message 
     if(LCDline > 1) LCDline=1; // Ensure line argument is not too large                                   
@@ -655,9 +675,9 @@ void scrollLCD(String LCDmsg, byte LCDline)
 /***********************************************************************************************************
  This function flashes the LCD backlight.
  ***********************************************************************************************************/
-void flashLCD()   
+void flashLCD()    // from http://forum.arduino.cc/index.php?topic=42835.0
 {
-    LINET("<flashLCD> Flashing back light of LCD.");
+    LINE_TIME("<flashLCD> Flashing back light of LCD.");
     for (byte cnt = 0; cnt < 4; cnt++)      // max was 10, but sped it up
     {
         lcd.backlight(); // Turn on the LCD backlight
@@ -674,7 +694,7 @@ void flashLCD()
  ***********************************************************************************************************/
 void hexdump(const void *mem, uint32_t len, uint8_t cols = 16) 
 {
-    LINET("<hexdump> HEX dump from websocket.");
+    LINE_TIME("<hexdump> HEX dump from websocket.");
     const uint8_t* src = (const uint8_t*) mem;
 	Serial.printf("\n[hexdump] Address: 0x%08X len: 0x%X (%d)", (ptrdiff_t)src, len, len);
 	for(uint32_t i = 0; i < len; i++) 
@@ -708,29 +728,43 @@ void hexdump(const void *mem, uint32_t len, uint8_t cols = 16)
  ***********************************************************************************************************/
 void startWiFi()
 {
-    LINET("<startWiFi> Scanning/connecting to strongest known AP signal.");
+    LINE_TIME("<startWiFi> Scanning/connecting to strongest known AP signal.");
     //WiFi.mode();
     wifiMulti.addAP(ssid0, password); // Add Wi-Fi AP we may be able to connect to
     wifiMulti.addAP(ssid1, password); // Add Wi-Fi AP we may be able to connect to
     wifiMulti.addAP(ssid2, password); // Add Wi-Fi AP we may be able to connect to
     wifiMulti.addAP(ssid3, password); // Add Wi-Fi AP we may be able to connect to
     wifiMulti.addAP(ssid4, password4); // Add Wi-Fi AP we may be able to connect to - Doug's WiFi
-    spl("[startWiFi] Connecting Wifi"); 
-    sp("[startWifi] initial wifiMulti.run() returned ");
+    spl(" [startWiFi] Connecting Wifi"); 
+    WiFi_active = false; // initial assumption is that we aren't able to connect to WiFi
+    sp(" [startWifi] initial wifiMulti.run() returned ");
     sp(wifiMulti.run());
-    while(wifiMulti.run() != WL_CONNECTED) 
-    {                                                               
-        sp(".\r"); // Send dot to console terminal to show the waiting process is active
-        delay(20); // Wait a little before trying again // was 100 msec, but sped it up
-    } // while
-    spl("");                                             
-    sp("[startWiFi] Connected to Access Point ");                                        
-    spl(WiFi.SSID()); // Name of AP to which the ESP32 is connected to
-    sp("[startWiFi] IP address: ");                                   
-    spl(WiFi.localIP());  // IP address assigned to ESP32 by AP
-    sp("[startWiFi] MAC address: ");                                   
-    spl(WiFi.macAddress()); // IP address of the ESP32
+    for ( int cnt=1; cnt<20; cnt -- )
+    {   if(WiFi_active == false) 
+        {   if (wifiMulti.run() == WL_CONNECTED)
+            {   WiFi_active = true ;           // note that we did manage to connect to WiFi                                                               
+                sp(" [startWiFi] Connected to Access Point ");                                        
+                spl(WiFi.SSID()); // Name of AP to which the ESP32 is connected to
+                sp(" [startWiFi] IP address: ");                                   
+                spl(WiFi.localIP());  // IP address assigned to ESP32 by AP
+                sp(" [startWiFi] MAC address: ");                                   
+                spl(WiFi.macAddress()); // IP address of the ESP32
+            } // if (wifiMulti...
+            else
+            {   delay(20); // Wait a little before trying again // was 100 msec, but sped it up
+            }
+        }  // if Wifi_active...      
+    }  // for cnt...
+// the boolean variable WiFi_active now indicates whether or not we connected to a network
 
+// do the accelerometer calibration even if we can't connect to a WiFi network    
+    if(WiFi.macAddress()=="30:AE:A4:37:54:F8")          // Is that you, TWIPi ?4
+    {   spl(" [startWiFi] configuring for bot TWIPi ");
+        acc_calibration_value = balance_37_54_f8 ;      // this does the bot-specific balance calibration
+    }  //replicate this if statement for other bots
+
+ // TWIPi MAC address: 30:AE:A4:37:54:F8 
+  
 } //startWiFi()
 
 /*************************************************************************************************************************************
@@ -741,22 +775,22 @@ void startWiFi()
  *************************************************************************************************************************************/
 void startDNS()
 {
-    LINET("<startDNS> Start the DNS service.");
+    LINE_TIME("<startDNS> Start the DNS service.");
     if (mdns.begin("esp32")) // Start mDNS service
     {
-        sp("[startDNS] MDNS responder started. ");
+        sp(" [startDNS] MDNS responder started. ");
         sp("Adding HTTP service to port 80 ");
         mdns.addService("http", "tcp", 80); // If successfully started add web service on port 80
         spl("and WS service to port 81");                    
         mdns.addService("ws", "tcp", 81); // If successfully started add websocket service on port 81
-        sp("[startDNS] Clients can connect to either ");
-        sp("http://esp32.local or http://"); 
+        sp(" [startDNS] Clients can connect to either ");
+        sp("http:\057\057esp32.local or http:\057\057");  // put the slashes in as ASCII to avoid comment interpretation
         spl(WiFi.localIP()); // Send message to console advising URI for clients to use
 
    } //if
    else // If mDNS service fails to start
    {
-      spl("[startDNS] mdns.begin failed"); // Issue message
+      spl(" [startDNS] mdns.begin failed"); // Issue message
    } //else
   
 } //startDNS()
@@ -768,9 +802,9 @@ void startDNS()
  ***********************************************************************************************************/
 volatile void handleRoot()
 {
-    LINET("<handleRoot> handleRoot web service event triggered.");
+    LINE_TIME("<handleRoot> handleRoot web service event triggered.");
     server.send_P(200, "text/html", INDEX_HTML); // Send the HTML page defined in INDEX_HTML
-    spl("[handleRoot] Home page  requested via HTTP request on port 80. Sent EEPROM defined document page to client");                              
+    spl(" [handleRoot] Home page  requested via HTTP request on port 80. Sent EEPROM defined document page to client");                              
    
 } //handleRoot()
 
@@ -780,7 +814,7 @@ volatile void handleRoot()
  ***********************************************************************************************************/
 volatile void handleNotFound()
 {
-    LINET("<handleNotFound> File not found web service event triggered.");
+    LINE_TIME("<handleNotFound> File not found web service event triggered.");
     String message = "File Not Found\n\n"; // Build string with 404 file not found message
         message += "URI: ";
         message += server.uri();
@@ -794,7 +828,7 @@ volatile void handleNotFound()
         message += " " + server.argName(i) + ": " + server.arg(i) + "\n"; 
     } //for
     server.send(404, "text/plain", message); // Send 404 error message back to client
-    spl("[handleNotFound] Sent 404 error to client");                              
+    spl(" [handleNotFound] Sent 404 error to client");                              
 
 } //handleNotFound()
 
@@ -803,7 +837,7 @@ volatile void handleNotFound()
  ***********************************************************************************************************/
 void startWebServer()
 {
-    LINET("<startWebServer> Starting Webserver service.");
+    LINE_TIME("<startWebServer> Starting Webserver service.");
     server.on("/", handleRoot); // Attach function for handling root page (/)
     server.on ( "/inline", []() // Attach simple inline page to test web server
     {
@@ -811,7 +845,7 @@ void startWebServer()
     } ); //server.on(/inline)
     server.onNotFound(handleNotFound); // Attach function for handling unknown page
     server.begin(); // Start web service
-    spl("[startWebServer] Started web server");                               
+    spl(" [startWebServer] Started web server");                               
 
 } //startWebServer()
 
@@ -820,7 +854,7 @@ void startWebServer()
  ***********************************************************************************************************/
 void startWebsocket()
 {
-    LINET("<startWebsocket> Starting Websocket service.");
+    LINE_TIME("<startWebsocket> Starting Websocket service.");
     webSocket.begin();
     webSocket.onEvent(webSocketEvent);    
 
@@ -831,10 +865,10 @@ void startWebsocket()
  ***********************************************************************************************************/
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) 
 {
-    LINET("<webSocketEvent> Websocket event detected.");
+    LINE_TIME("<webSocketEvent> Websocket event detected.");
     if(JSON_DEBUG) // If JSON message debug flag set  
     {
-        spf("[webSocketEvent] Event detected: "); // Show event details in terminal   
+        spf(" [webSocketEvent] Event detected: "); // Show event details in terminal   
         spf("num = %d, type = %d (", num, type); // Show event details in terminal
         sp(wsEvent[type-1]);spl(")"); // Show event details in terminal
     } //if
@@ -842,7 +876,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
     switch(type) // Handle each event by type
     {
         case WStype_DISCONNECTED: // Client disconnect event
-            spf("[webSocketEvent] Client NUM [%u] disconnected\r\n", num);
+            spf(" [webSocketEvent] Client NUM [%u] disconnected\r\n", num);
             telClientConnected = false;
             writeLED(telClientConnected);
             break;
@@ -851,7 +885,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
             IPAddress ip = webSocket.remoteIP(num);
             telClientConnected = true;
             writeLED(telClientConnected);
-            spf("[webSocketEvent] [%u] Connected from %d.%d.%d.%d url: %s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+            spf(" [webSocketEvent] [%u] Connected from %d.%d.%d.%d url: %s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
 //            sendClientLEDState(num); // Send new client state of onboard LED
 //            sendClientLCDState(num); // Send new client text displayed on LCD
 //            sendClientVariableValue(num,"PID"); // Send new client PID tuning values
@@ -861,17 +895,17 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         case WStype_TEXT: // Client sent text event
             if(JSON_DEBUG) // If JSON message debug flag set  
             {
-                spf("[webSocketEvent] Client NUM: [%u], sent TEXT: %s\r\n", num, payload);
+                spf(" [webSocketEvent] Client NUM: [%u], sent TEXT: %s\r\n", num, payload);
             } //if
             process_Client_JSON_msg(num, type, payload, length); // Process recieved message using JSON library
             break;
         case WStype_BIN: // Client sent binary data event
-            spf("[webSocketEvent] [%u] get binary length: %u\r\n", num, length);
+            spf(" [webSocketEvent] [%u] get binary length: %u\r\n", num, length);
             hexdump(payload, length); // Dump ESP8266 memory in hex to the console
             webSocket.sendBIN(num, payload, length); // echo data back to browser
             break;
         default: // Unknown websocket event
-            spf("[webSocketEvent] Invalid WStype [%d]\r\n", type);
+            spf(" [webSocketEvent] Invalid WStype [%d]\r\n", type);
             break;
     } //switch()
 
@@ -929,21 +963,21 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
    JsonObject& root = jsonBuffer.parseObject(payload_str);                   // Create JSON object tree with reference handle "root"
    if (!root.success())                                                      // Test if parsing succeeds 
    {
-      sp("[process_Client_JSON_msg] WARNING, parseObject() failed on message from client [");
+      sp(" [process_Client_JSON_msg] WARNING, parseObject() failed on message from client [");
       sp(num);spl("]. Message ignored");
       return;
    } //if
    String item = root["item"];                                               // This is the item that the client is interested in
    if(JSON_DEBUG)                                                            // If JSON message debug flag set  
    {
-      sp("[process_Client_JSON_msg] message from client regarding item: ");sp(item);
+      sp(" [process_Client_JSON_msg] message from client regarding item: ");sp(item);
    } //if
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // Message handling for LED related commands
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    if(item == "LED")                                                         // Check if client is interested in the LED
    {
-      spf("[process_Client_JSON_msg] Client NUM [%u] messaging about LED\r\n", num);
+      spf(" [process_Client_JSON_msg] Client NUM [%u] messaging about LED\r\n", num);
       String action = root["action"];                                        // This is what the client wants to do with the LED
       String value = root["value"];                                          // This is the value detail for the LED
       if (action == "set")                                                   // If client wants to SET LED value
@@ -952,7 +986,7 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
          {
             if(JSON_DEBUG)                                                   // If JSON message debug flag set  
             {
-               sp("[process_Client_JSON_msg] Client requested LED on: ");
+               sp(" [process_Client_JSON_msg] Client requested LED on: ");
             } //if
             writeLED(true);                                                  // Call function to turn GPIO LED off
             sendClientLEDState(99);                                          // Request broadcast (99) of the current value of the LED
@@ -961,24 +995,24 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
          {
             if(JSON_DEBUG)                                                   // If JSON message debug flag set  
             {
-               sp("[process_Client_JSON_msg] Client requested LED off: ");
+               sp(" [process_Client_JSON_msg] Client requested LED off: ");
             } //if
             writeLED(false);                                                 // Call function to turn GPIO LED on
             sendClientLEDState(99);                                          // Request broadcast (99) of the current value of the LED
          } //else if
          else                                                                // If client wants any other value it is invalid
          {
-            sp("[process_Client_JSON_msg] Client [");sp(num);sp("] has sent unrecognized VALUE [");sp(value);spl("] for LED. Message ignored");
+            sp(" [process_Client_JSON_msg] Client [");sp(num);sp("] has sent unrecognized VALUE [");sp(value);spl("] for LED. Message ignored");
          } //else       
       } //if ACTION
       else if (root["action"] == "get")                                      // If client wants to GET LED value
       {
-         spf("[process_Client_JSON_msg] Client [%u] requesting current LED value\r\n", num);
+         spf(" [process_Client_JSON_msg] Client [%u] requesting current LED value\r\n", num);
          sendClientLEDState(num);                                            // Send client the current value of the LED
       } //else if ACTION
       else                                                                   // Any other action the client wants for LED is invalid
       {
-         sp("[process_Client_JSON_msg] Client [");sp(num);sp("] has sent unrecognized ACTION [");sp(action);spl("]. Message ignored");
+         sp(" [process_Client_JSON_msg] Client [");sp(num);sp("] has sent unrecognized ACTION [");sp(action);spl("]. Message ignored");
       } //else ACTION
    } //if
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -986,13 +1020,13 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    else if(item == "LCD")                                                    // Check if client is interested in the LCD
    {
-      spf("[process_Client_JSON_msg] Client NUM [%u] messaging about LCD\r\n", num);
+      spf(" [process_Client_JSON_msg] Client NUM [%u] messaging about LCD\r\n", num);
       String action = root["action"];                                        // This is what the client wants to do with the LCD
       String line1 = root["line1"];                                          // Message text for top line of LCD
       String line2 = root["line2"];                                          // Message text for bottom line of LCD
       if (action == "set")                                                   // If client wants to SET LCD value
       {
-         spf("[process_Client_JSON_msg] Client [%u] wants to set LCD message\r\n", num);         
+         spf(" [process_Client_JSON_msg] Client [%u] wants to set LCD message\r\n", num);         
          lcd.clear();                                                        // Clear the LCD screen
          sendLCD(line1, 0);                                                  // Update line 1 of LCD with client message
          sendLCD(line2, 1);                                                  // Update line 2 of LCD with client message
@@ -1000,12 +1034,12 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
       } // if
       else if(action == "get")                                               // If client wants to GET LCD value
       {
-         spf("[process_Client_JSON_msg] Client [%u] requesting current LCD message\r\n", num);
+         spf(" [process_Client_JSON_msg] Client [%u] requesting current LCD message\r\n", num);
          sendClientLCDState(num);                                            // Send client the current value of the LED        
       } //else if
       else                                                                   // If ACTION is not one of the above values
       {
-         sp("[process_Client_JSON_msg] Client [");sp(num);sp("] has sent unrecognized ACTION [");sp(action);spl("]. Message ignored");        
+         sp(" [process_Client_JSON_msg] Client [");sp(num);sp("] has sent unrecognized ACTION [");sp(action);spl("]. Message ignored");        
       } //else
    } //else if ITEM LCD
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1015,7 +1049,7 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    else if(item == "ping")                                                   // Check if client is sending ping test message
    {
-      spf("[process_Client_JSON_msg] Client NUM [%u] sent ping message\r\n", num);
+      spf(" [process_Client_JSON_msg] Client NUM [%u] sent ping message\r\n", num);
       sendClientPing(num);                                                   // Send client the current value of the LED        
    } //else if ITEM ping
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1023,31 +1057,31 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    else if(item == "BAL-TEL")                                                // Check if client is sending telemetry config message
    {
-      spf("[process_Client_JSON_msg] Client NUM [%u] messaging about telemetry data\r\n", num);
+      spf(" [process_Client_JSON_msg] Client NUM [%u] messaging about telemetry data\r\n", num);
       String action = root["action"];                                        // This is what the client wants to do with the flag
       String value = root["value"];                                          // This is the value detail for the flag
       if (action == "set")                                                   // If client wants to SET telemetry flag value
       {
-         spf("[process_Client_JSON_msg] Client [%u] wants to set telemetry flag\r\n", num);   
+         spf(" [process_Client_JSON_msg] Client [%u] wants to set telemetry flag\r\n", num);   
          if(value == "flagon")                                               // If client wants to recieve telemetry data
          {
-            sp("[process_Client_JSON_msg] Client [");sp(num);sp("] has requested telemetry data be sent. Setting flag ON"); 
+            sp(" [process_Client_JSON_msg] Client [");sp(num);sp("] has requested telemetry data be sent. Setting flag ON"); 
             sendTelemetry = "flagon";       
          } //if
          else                                                                // Any other value other then ON turns off telemetry data
          {
-            sp("[process_Client_JSON_msg] Client [");sp(num);sp("] has requested telemetry data be sent. Setting flag OFF"); 
+            sp(" [process_Client_JSON_msg] Client [");sp(num);sp("] has requested telemetry data be sent. Setting flag OFF"); 
             sendTelemetry = "flagoff";               
          } //else if               
       } // if
       else if(action == "get")                                               // If client wants to GET telemetry flag value
       {
-         spf("[process_Client_JSON_msg] Client [%u] requesting current telemetry flag value message\r\n", num);
+         spf(" [process_Client_JSON_msg] Client [%u] requesting current telemetry flag value message\r\n", num);
          sendClientVariableValue(num,"sendTelemetry");                       // Send client the current value of the BAL-TEL flag        
       } //else if
       else                                                                   // If ACTION is not one of the above values
       {
-         sp("[process_Client_JSON_msg] Client [");sp(num);sp("] has sent unrecognized ACTION [");sp(action);spl("]. Message ignored");        
+         sp(" [process_Client_JSON_msg] Client [");sp(num);sp("] has sent unrecognized ACTION [");sp(action);spl("]. Message ignored");        
       } //else
    } //else if ITEM BAL-TEL
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1055,7 +1089,7 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    else if(item == "PID") // Check if client is sending PID config message
    {
-        spf("[process_Client_JSON_msg] Client NUM [%u] messaging about PID values\r\n", num);
+        spf(" [process_Client_JSON_msg] Client NUM [%u] messaging about PID values\r\n", num);
         String action = root["action"]; // This is what the client wants to do with the flag
         if (action == "set") // If client wants to SET PID values
         {
@@ -1072,7 +1106,7 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
    Serial.println(f,6);  // the number in the second argument tells how many digits of precision to use
 */
 
-         spf("[process_Client_JSON_msg] Client [%u] wants to set the following PID variables:\r\n", num);
+         spf(" [process_Client_JSON_msg] Client [%u] wants to set the following PID variables:\r\n", num);
 //         spf("pid_p_gain = [%s]",root["pGain"]);                             // Assign value sent from cleint for P gain
 //         spf("pid_i_gain = [%s]",root["iGain"]);                             // Assign value sent from cleint for I gain
 //         spf("pid_d_gain = [%s]",root["dGain"]);                             // Assign value sent from cleint for D gain
@@ -1085,12 +1119,12 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
       } //if
       else if(action == "get")                                               // If client wants to GET PID values
       {
-         spf("[process_Client_JSON_msg] Client [%u] requesting current PID variable values\r\n", num);
+         spf(" [process_Client_JSON_msg] Client [%u] requesting current PID variable values\r\n", num);
          sendClientVariableValue(num,"sendPID");                            // Send client the current value of the PID variables        
       } //else if
       else                                                                   // If ACTION is not one of the above values
       {
-         sp("[process_Client_JSON_msg] Client [");sp(num);sp("] has sent unrecognized ACTION [");sp(action);spl("]. Message ignored");        
+         sp(" [process_Client_JSON_msg] Client [");sp(num);sp("] has sent unrecognized ACTION [");sp(action);spl("]. Message ignored");        
       } //else
     
    } //else if ITEM PID
@@ -1099,7 +1133,7 @@ void process_Client_JSON_msg(uint8_t num, WStype_t type, uint8_t * payload, size
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    else                                                                      // Unknown item being referenced by client
    {
-      sp("[process_Client_JSON_msg] Client NUM [");sp(num);sp("] messaging about unknown ITEM [");sp(item);spl("]. Message ignored");
+      sp(" [process_Client_JSON_msg] Client NUM [");sp(num);sp("] messaging about unknown ITEM [");sp(item);spl("]. Message ignored");
    } //else ITEM UNKNOWN
 
 } //process_Client_JSON_msg()
@@ -1119,7 +1153,7 @@ void sendClientPing(uint8_t num)
    root.printTo(msg);                                                        // Convert JSON object tree to string
    if(pcnt%1000==0) 
    {
-       sp("[sendClientPing] time after 1000 pings = ");spl(millis());
+       sp(" [sendClientPing] time after 1000 pings = ");spl(millis());
    } //if
    webSocket.sendTXT(num, msg);                                              // Send JSON message to server (robot)
 
@@ -1147,12 +1181,12 @@ void sendClientLEDState(uint8_t num)
    root.printTo(msg);                                                        // Convert JSON object tree to string
    if(num==99)                                                               // If client num is 99 we want to multicast 
    {
-      sp("[sendClientLEDState] broadcast this to all clients: ");spl(msg);
+      sp(" [sendClientLEDState] broadcast this to all clients: ");spl(msg);
       webSocket.broadcastTXT(msg);                                           // Send payload data to all connected clients
    } //if
    else                                                                      // Otherwise we unicast to a specific client
    {
-      sp("[sendClientLEDState] unicast this to [");sp(num);sp("]: ");spl(msg);
+      sp(" [sendClientLEDState] unicast this to [");sp(num);sp("]: ");spl(msg);
       webSocket.sendTXT(num, msg);                                           // Send JSON message to server (robot)
    } //else
 
@@ -1174,12 +1208,12 @@ void sendClientLCDState(uint8_t num)
    root.printTo(msg);                                                        // Convert JSON object tree to string
    if(num==99)                                                               // If client num is 99 we want to multicast 
    {
-      sp("[sendClientLCDState] broadcast this to all clients: ");spl(msg);
+      sp(" [sendClientLCDState] broadcast this to all clients: ");spl(msg);
       webSocket.broadcastTXT(msg);                                           // Send payload data to all connected clients
    } //if
    else                                                                      // Otherwise we unicast to a specific client
    {
-      sp("[sendClientLCDState] unicast this to [");sp(num);sp("]: ");spl(msg);
+      sp(" [sendClientLCDState] unicast this to [");sp(num);sp("]: ");spl(msg);
       webSocket.sendTXT(num, msg);                                           // Send JSON message to server (robot)
    } //else
 
@@ -1196,7 +1230,7 @@ void reportTel(String msg)
     } //if
     else
     {
-        //Serial.println("[reportTel] Cannot send telemetry, no connected client");
+        //Serial.println(" [reportTel] Cannot send telemetry, no connected client");
     } //else
 } //reportTel()
 
@@ -1266,12 +1300,12 @@ void sendClientBalanceGraph(uint8_t num,float a1, float a2, float a3, float a4)
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    if(num==99)                                                               // If client num is 99 we want to multicast 
    {
-      sp("[sendClientLEDState] broadcast this to all clients: ");spl(msg);
+      sp(" [sendClientLEDState] broadcast this to all clients: ");spl(msg);
       webSocket.broadcastTXT(msg);                                           // Send payload data to all connected clients
    } //if
    else                                                                      // Otherwise we unicast to a specific client
    {
-      sp("[sendClientLEDState] unicast this to [");sp(num);sp("]: ");spl(msg);
+      sp(" [sendClientLEDState] unicast this to [");sp(num);sp("]: ");spl(msg);
       webSocket.sendTXT(num, msg);                                           // Send JSON message to server (robot)
    } //else
  
@@ -1299,10 +1333,10 @@ void sendClientVariableValue(uint8_t num, String variable)
    } //if
    else if(variable == "PID")                                                // Send client the PID tuning data
    {
-      spl("[sendClientVariableValue] PID values are float, which cannot be sent via JSON message, so we convert them to Strings");
-      sp("[sendClientVariableValue] pid_p_gain = ");spl(pid_p_gain,4);       // Print float to 4 places of precision in console
-      sp("[sendClientVariableValue] pid_i_gain = ");spl(pid_i_gain,4);       // Print float to 4 places of precision in console
-      sp("[sendClientVariableValue] pid_d_gain = ");spl(pid_d_gain,4);       // Print float to 4 places of precision in console
+      spl(" [sendClientVariableValue] PID values are float, which cannot be sent via JSON message, so we convert them to Strings");
+      sp(" [sendClientVariableValue] pid_p_gain = ");spl(pid_p_gain,4);       // Print float to 4 places of precision in console
+      sp(" [sendClientVariableValue] pid_i_gain = ");spl(pid_i_gain,4);       // Print float to 4 places of precision in console
+      sp(" [sendClientVariableValue] pid_d_gain = ");spl(pid_d_gain,4);       // Print float to 4 places of precision in console
       root["item"] = "PID";                                                  // Element 1 of JSON message
       root["action"] = "get";                                                // Element 2 of JSON message
       root["pGain"] = String(pid_p_gain, 4)+"f";                             // Element 3 of JSON message is pid_p_gain with 4 digits of precision and an f appended
@@ -1322,12 +1356,12 @@ void sendClientVariableValue(uint8_t num, String variable)
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    if(num==99)                                                               // If client num is 99 we want to multicast 
    {
-      sp("[sendClientLEDState] broadcast this to all clients: ");spl(msg);
+      sp(" [sendClientLEDState] broadcast this to all clients: ");spl(msg);
       webSocket.broadcastTXT(msg);                                           // Send payload data to all connected clients
    } //if
    else                                                                      // Otherwise we unicast to a specific client
    {
-      sp("[sendClientLEDState] unicast this to [");sp(num);sp("]: ");spl(msg);
+      sp(" [sendClientLEDState] unicast this to [");sp(num);sp("]: ");spl(msg);
       webSocket.sendTXT(num, msg);                                           // Send JSON message to server (robot)
    } //else
    
@@ -1338,7 +1372,7 @@ void sendClientVariableValue(uint8_t num, String variable)
  ***********************************************************************************************************/
 String ipToString(IPAddress ip)
 {
-    LINET("<ipToString> Converting IP address to String.");
+    LINE_TIME("<ipToString> Converting IP address to String.");
     String s="";
     for (int i=0; i<4; i++)
     s += i  ? "." + String(ip[i]) : String(ip[i]);
@@ -1366,38 +1400,38 @@ void initializeIMU_1()
     byte error, lowByte;
     String tmsg;
 
-    LINET("<initializeIMU_1> Initializing the MPU6050 IMU part 1.");
-    sp("[initializeIMU_1]: Checking to see if the IMU is found on I2Ctwo at expected I2C address of 0x");
+    LINE_TIME("<initializeIMU_1> Initializing the MPU6050 IMU part 1.");
+    sp(" [initializeIMU_1]: Checking to see if the IMU is found on I2Ctwo at expected I2C address of 0x");
     spl(MPU_address,HEX);
     Wire1.beginTransmission(MPU_address);
     error = Wire1.endTransmission(true);
     if (error == 0)
     {
-        sp("[initializeIMU_1] I2C device found on I2Ctwo at address 0x");
+        sp(" [initializeIMU_1] I2C device found on I2Ctwo at address 0x");
         spl(MPU_address,HEX);
-        spl("[initializeIMU_1] The IMU MPU-6050 found at expected address");
+        spl(" [initializeIMU_1] The IMU MPU-6050 found at expected address");
         Wire1.beginTransmission(MPU_address);
         Wire1.write(MPU6050_WHO_AM_I);
         Wire1.endTransmission();
-        spl("[initializeIMU-1] Send Who am I request to IMU...");
+        spl(" [initializeIMU-1] Send Who am I request to IMU...");
         Wire1.requestFrom(MPU_address, 1);
         while(Wire1.available() < 1); // Wait for reply from IMU slave on I2C bus                                     
         lowByte = Wire1.read();
         if(lowByte != MPU_address)   // if there was an error...
         {
-           sp("[initializeIMU_2] Wrong Who Am I response: 0x");
+           sp(" [initializeIMU_2] Wrong Who Am I response: 0x");
            if (lowByte<16)Serial.print("0");
            spl(lowByte, HEX);
-           spl("[initializeIMU_2] Initialization of IMU failed");    
+           spl(" [initializeIMU_2] Initialization of IMU failed");    
         }
         else
         {    
-            sp("[initializeIMU_1] Who Am I response is ok: 0x");
+            sp(" [initializeIMU_1] Who Am I response is ok: 0x");
             spl(lowByte, HEX);        
-            spl("[initializeIMU_1] Set up the Gyro registers in the IMU");
+            spl(" [initializeIMU_1] Set up the Gyro registers in the IMU");
             set_gyro_registers();
-            spl("[initializeIMU_1] Gyro started and configured");
-            spl("[initializeIMU_1] Waiting to allow MPU to settle down");
+            spl(" [initializeIMU_1] Gyro started and configured");
+            spl(" [initializeIMU_1] Waiting to allow MPU to settle down");
         } //if(lowByte)...
 
         IMU_warmup_start = millis() ; // remember when the IMU warmup started for initializeIMU_2, called later
@@ -1406,9 +1440,9 @@ void initializeIMU_1()
 
     else   // if IMU didn't respond at expected I2C address
     {
-        sp("[initializeIMU_2] MPU-6050 query returned error code ");
+        sp(" [initializeIMU_2] MPU-6050 query returned error code ");
         spl(error);
-        spl("[initializeIMU_2] ERROR! Robot will not be able to balance");
+        spl(" [initializeIMU_2] ERROR! Robot will not be able to balance");
     } //else
 
 
@@ -1426,21 +1460,21 @@ void initializeIMU_2()
     int temp,tcnt1, tcnt2;
     String tmsg;
     
-    LINET("<initializeIMU_2> Initializing the MPU6050 IMU part 2.");
-    sp("[initializeIMU_2]: Continuing IMU warmup and calibration for address ");
+    LINE_TIME("<initializeIMU_2> Initializing the MPU6050 IMU part 2.");
+    sp(" [initializeIMU_2]: Continuing IMU warmup and calibration for address ");
     spl(MPU_address,HEX);
     temp = millis() - IMU_warmup_start;         // this is how many msec IMU has been warming up
     if( temp < IMU_warmup_interval)             // if there's still time left in the warmup      
     {   for(int x = IMU_warmup_interval - temp; x > 0; x--)   // then kill time until warmup's done
         {  if( x == (floor(x / 1000)) * 1000)          // if we're at a one second multiple...
-           {  tmsg = "[initializeIMU_2] Delay countdown in msec: " + String(x);
+           {  tmsg = " [initializeIMU_2] Delay countdown in msec: " + String(x);
               spl(tmsg);                        // display time to go on console in msec
            } // if 
            delay(1);                            // just passing time while IMU warms up
         } //for
     }  //if
             read_mpu_6050_data(); // Read MPU registers                
-            spl("[initializeIMU_2] Create Gyro pitch and yaw offset values by averaging 500 sensor readings...");
+            spl(" [initializeIMU_2] Create Gyro pitch and yaw offset values by averaging 500 sensor readings...");
             tcnt1 = 0; tcnt2 = 10;
             for(receive_counter = 0; receive_counter < 500; receive_counter++) // Create 500 loops
             {
@@ -1449,7 +1483,7 @@ void initializeIMU_2()
                 {
                     tcnt1 = 0;
                     tcnt2 --;
-                    tmsg = "[initializeIMU_2] Gyro calc countdown: " + String(tcnt2);
+                    tmsg = " [initializeIMU_2] Gyro calc countdown: " + String(tcnt2);
                     spl(tmsg);              
                 } //if
 
@@ -1484,35 +1518,33 @@ void initializeIMU_2()
             {
                 while( 1==1) // request an IMU reset, because it's not working
                 {
-                    spl("[setup] ******* IMU is stuck and needs a reset **********");
+                    spl(" [setup] ******* IMU is stuck and needs a reset **********");
                     delay(3000);
                 } //while
             } //if
             gyro_roll_calibration_value /= 500; // Divide the total value by 500 to get the avarage gyro pitch offset
             gyro_pitch_calibration_value /= 500; // Divide the total value by 500 to get the avarage gyro yaw offset
             balance_calibration_value /=500; // Divide the total value by 500 to get the avarage balance value (Z accelerometer)            
-            sp("[initializeIMU_2] gyro_pitch_calibration_value= "); 
+            sp(" [initializeIMU_2] gyro_pitch_calibration_value= "); 
             spl(gyro_pitch_calibration_value);
-            sp("[initializeIMU_2] gyro_roll_calibration_value= "); 
+            sp(" [initializeIMU_2] gyro_roll_calibration_value= "); 
             spl(gyro_roll_calibration_value);
-            sp("[initializeIMU_2] speed override value= "); spl(speed);    
-            sp("[initializeIMU_2]: Balance value. NOTE - this is the balance value only if the robot is standing upright: ");
+            sp(" [initializeIMU_2] speed override value= "); spl(speed);    
+            sp(" [initializeIMU_2]: Balance value. NOTE - this is the balance value only if the robot is standing upright: ");
             spl(balance_calibration_value);
-            sp("[initializeIMU]: acc_calibration_value currently set to ");
+            sp(" [initializeIMU]: acc_calibration_value currently set to ");
             spl(acc_calibration_value);
- 
-    spl("[initializeIMU_2] IMU initialization complete.");
-    imuReady = true;
+    spl(" [initializeIMU_2] IMU initialization complete.");
+    imuReady = true ;
     //vTaskDelete( NULL );
-
 } //initializeIMU_2()
 /***********************************************************************************************************
  This function configures the MPU6050 using settings recommended by Joop Brokking
  ***********************************************************************************************************/
 void set_gyro_registers()
 {
-    LINET("<set_gyro_registers> Configure the MPU6050.");
-    spl("[set_gyro_registers] Wake up MPU"); // By default the MPU-6050 sleeps. So we have to wake it up.
+    LINE_TIME("<set_gyro_registers> Configure the MPU6050.");
+    spl(" [set_gyro_registers] Wake up MPU"); // By default the MPU-6050 sleeps. So we have to wake it up.
 
     Wire1.beginTransmission(MPU_address); // Start communication with the address found during search.
     Wire1.write(0x6B); // We want to write to the PWR_MGMT_1 register (6B hex)
@@ -1520,21 +1552,21 @@ void set_gyro_registers()
     Wire1.endTransmission(); // End the transmission with the gyro.
 
     // Set the full scale of the gyro to +/- 250 degrees per second
-    spl("[set_gyro_registers] Set the full scale of the gyro to +/- 250 degrees per second");
+    spl(" [set_gyro_registers] Set the full scale of the gyro to +/- 250 degrees per second");
     Wire1.beginTransmission(MPU_address); // Start communication with the address found during search.
     Wire1.write(0x1B); // We want to write to the GYRO_CONFIG register (1B hex)
     Wire1.write(0x00); // Set the register bits as 00000000 (250dps full scale)
     Wire1.endTransmission(); // End the transmission with the gyro
         
     // Set the full scale of the accelerometer to +/- 4g.
-    spl("[set_gyro_registers] Set the full scale of the accelerometer to +/- 4g");
+    spl(" [set_gyro_registers] Set the full scale of the accelerometer to +/- 4g");
     Wire1.beginTransmission(MPU_address); // Start communication with the address found during search.
     Wire1.write(0x1C); // We want to write to the ACCEL_CONFIG register (1A hex)
     Wire1.write(0x08); // Set the register bits as 00001000 (+/- 4g full scale range)
     Wire1.endTransmission(); // End the transmission with the gyro
 
     // Set some filtering to improve the raw data.
-    spl("[set_gyro_registers] Set Set Digital Low Pass Filter to ~43Hz to improve the raw data");
+    spl(" [set_gyro_registers] Set Set Digital Low Pass Filter to ~43Hz to improve the raw data");
     Wire1.beginTransmission(MPU_address); // Start communication with the address found during search
     Wire1.write(0x1A); // We want to write to the CONFIG register (1A hex)
     Wire1.write(0x03); // Set the register bits as 00000011 (Set Digital Low Pass 
@@ -1549,7 +1581,7 @@ void set_gyro_registers()
  ***********************************************************************************************************/
 void read_mpu_6050_data()                                              
 {
-    LINET("<read_mpu_6050_data> Read MPU6050 registers.");
+    LINE_TIME("<read_mpu_6050_data> Read MPU6050 registers.");
     Wire1.beginTransmission(MPU_address); // Start communicating with the MPU-6050
     Wire1.write(0x3B); // Send the requested starting register
     Wire1.endTransmission(); // End the transmission
@@ -1577,7 +1609,7 @@ void read_mpu_6050_data()
  ***********************************************************************************************************/
 void startTimer0()
 {
-    LINET("<startTimer0> Initialize and start timer0.");
+    LINE_TIME("<startTimer0> Initialize and start timer0.");
     timer0 = timerBegin(timer_number_0, timer_prescaler_0, timer_cnt_up); // Pointer to hardware timer 0
     timerAttachInterrupt(timer0, &onTimer0, true); // Bind onTimer function to hardware timer 0
     timerAlarmWrite(timer0, 20, true); // Interrupt generated is of edge type not level (third arg) at 
@@ -1592,7 +1624,7 @@ void startTimer0()
  ***********************************************************************************************************/
 void initializeMotorControllers()
 {
-    LINET("<initializeMotorControllers> Set up GPIO pins connected to motors.");
+    LINE_TIME("<initializeMotorControllers> Set up GPIO pins connected to motors.");
     pinMode(pin_left_dir,OUTPUT); // Note that our motor control pins are Outputs
     pinMode(pin_left_step,OUTPUT);
     pinMode(pin_right_dir,OUTPUT);
@@ -1611,25 +1643,21 @@ void setup()
 {
     Serial.begin(115200); // Open a serial connection at 115200bps
     Serial.println("");
-    LINET("<setup> Start of sketch.");
-    sp("[setup] PIN attached to onboard LED = "); spl(LED_BUILTIN);
+    LINE_TIME("<setup> Start of sketch.");
+    sp(" [setup] PIN attached to onboard LED = "); spl(LED_BUILTIN);
     pinMode(LED_BUILTIN, OUTPUT); // Take control on onboard LED
     writeLED(false); // Turn onboard LED off
     display_Running_Sketch(); // Show environment details in console
 //    Serial.setDebugOutput(true); // http://esp8266.github.io/Arduino/versions/2.0.0/doc/reference.html
-    for(uint8_t t = 1; t > 0; t--) // Allow time for ESP32 serial to initialize // was 4 loops, but sped it up
-    {
-        spf("[setup] Boot wait %d...\r\n", t); // Count down message to console
         Serial.flush(); // Wait for message to clear buffer
         delay(200); // Allow time to pass   // was 1000 msec/loop, but sped it up
-    } //for   
     startI2Cone(); // Scan the first I2C bus for LCD
     startI2Ctwo(); // Scan the second I2C bus for MPU   AM: This is the issue
     initializeLCD(); // Initialize the Open Smart 1602 LCD Display
     sendLCD("Boot Sequence",LINE1); // Boot message to LCD line 1
-    spl("[setup] Initialize IMU part 1");
+    spl(" [setup] Initialize IMU part 1");
     sendLCD("Init IMU part 1",LINE2); // Send more boot message to LCD line 2
-    initializeIMU_1();
+    initializeIMU_1();         // move this earlier to maximize overlapping processing
     sendLCD("Init Motors",LINE2); // Send more boot message to LCD line 2
     initializeMotorControllers(); // Initialize the motor controllers
     sendLCD("Start WiFi",LINE2); // Starting WiFi message to LCD line 2
@@ -1655,7 +1683,7 @@ void setup()
         2, // Priority of the task
         &monWeb, // Task handle
         0); // Specify which of the two CPU cores to pin this task to
-    spl("[setup] Initialize IMU part 2");
+    spl(" [setup] Initialize IMU part 2");
     sendLCD("Init IMU part 2",LINE2); // Send more boot message to LCD line 2
     initializeIMU_2();
     sendLCD("Balance Task",LINE2); // Send more boot message to LCD line 2
@@ -1672,7 +1700,7 @@ void setup()
     sendLCD(ipToString(WiFi.localIP()),LINE1); // Send IP address to LCD line 1
     sendLCD("Version: " + my_ver,LINE2); // Send version of code to LCD line 2
     startTimer0();
-    LINET("<setup> initialization process complete");
+    LINE_TIME("<setup> initialization process complete");
     loop_timer = micros() + LoopDelay; // Set the loop_timer variable at the next end loop time
 
 } //setup()
@@ -1754,8 +1782,8 @@ void balanceRobot()
                                                                         // limiting the acc data to +/-8200;
         if(accelerometer_data_raw < -8192)accelerometer_data_raw = -8192; // Prevent division by zero by 
                                                                         // limiting the acc data to +/-8200;
-// crude fix adding 8 degress in next line                                                                        
-        angle_acc = asin((float)accelerometer_data_raw/8192.0)* 57.296 + 8; // Calculate the current angle 
+// crude fix adding 8 degress in next line was removed                                                                       
+        angle_acc = asin((float)accelerometer_data_raw/8192.0)* 57.296; // Calculate the current angle 
                                                                         // according to the accelerometer
         if(start == 0 && angle_acc > -0.5&& angle_acc < 0.5) // If the accelerometer angle is almost 0
         {
@@ -1795,46 +1823,50 @@ void balanceRobot()
         // re-comment the line below to see if angle calibration gets more accurate
 //        angle_gyro -= gyro_yaw_data_raw * 0.0000003; // Compensate the gyro offset when the robot is rotating
 //        angle_gyro += gyro_pitch_data_raw * 0.0000003; // Compensate the gyro offset when the robot is rotating
-        //angle_gyro = angle_gyro * 0.9996 + angle_acc * 0.0004; // Correct the drift of the gyro angle with 
-                                                                 // the accelerometer angle
-        angle_gyro = angle_gyro * 0.996 + angle_acc * 0.004; // Correct the drift of the gyro angle with the 
-                                                             // accelerometer angle
+
+//angle_gyro = angle_gyro * 0.9996 + angle_acc * 0.0004; // Correct drift of gyro angle with the accelerometer angle
+        angle_gyro = angle_gyro * 0.996 + angle_acc * 0.004; // Correct drift of gyro angle with the accelerometer angle
+
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         // PID controller calculations. The balancing robot is angle driven. First the difference between the 
-        // desired angel (setpoint) and actual angle (process value) is calculated. The self_balance_pid_setpoint 
-        // variable is automatically changed to make sure that the robot stays balanced all the time. The 
-        // (pid_setpoint - pid_output * 0.015) part functions as a brake function.
+        // desired angel (setpoint) and actual angle (process value) is calculated. 
         //////////////////////////////////////////////////////////////////////////////////////////////////////
    
-        pid_error_temp = angle_gyro - self_balance_pid_setpoint - pid_setpoint;
-        if(pid_output > 10 || pid_output < -10)pid_error_temp += pid_output * 0.015;
-        //try to reduce longevity of pid_i_mem, which gets big, and stays big
-//        pid_i_mem += pid_i_gain * pid_error_temp; // Calculate the I-controller value and add it to the  
-                                                    // pid_i_mem variable
-        temp = pid_i_gain * pid_error_temp; // current I controller value
+        pid_error_temp = angle_gyro ;  // balance point is at zero degrees, including balance calibration...
+                                       // done via the acc_calibration_value paremeter in startWiFi
+
+// following line works differently for +ve and -ve pid_error_temp values.
+// cases seen where it converts a small -ve error to a positive error, and drives motors in wrong direction
+// just remove it for now. could also fix it
+//       if(pid_output > 10 || pid_output < -10)pid_error_temp += pid_output * 0.015;
+
+        pid_i_mem += pid_i_gain * pid_error_temp;       // Calculate the I-controller value and add it to the  
+                                                        // pid_i_mem variable
+        hold1 = pid_i_gain * pid_error_temp;            // current I controller increment, for debug
         hold2 = pid_i_mem; // grab it for debugging before it gets changed
-//        pid_i_mem =temp + PID_I_fade * pid_i_mem; // allow impact of past pid_i_mem history to fade out over time
-        if(pid_i_mem > pid_max)pid_i_mem = pid_max; // Limit the I-controller to the parameterized maximum  
-                                                    // controller output
+
+// try to reduce longevity of pid_i_mem, which gets big, and stays big
+//        pid_i_mem =temp + PID_I_fade * pid_i_mem;     // allow impact of past pid_i_mem history to fade out over time
+        if(pid_i_mem > pid_max)pid_i_mem = pid_max;     // Limit the I-controller to the parameterized maximum  
+                                                        // controller output
         else if(pid_i_mem < pid_min)pid_i_mem = pid_min;
         //Calculate the PID output value
         pid_output = pid_p_gain * pid_error_temp + pid_i_mem + pid_d_gain * (pid_error_temp - pid_last_d_error);
         hold3 = pid_output;
-        if(pid_output > pid_max)pid_output = pid_max; // Limit the PI-controller to the maximum controller output
+        hold4 = pid_p_gain * pid_error_temp ;           // the P in PID
+        hold5 = pid_d_gain * (pid_error_temp - pid_last_d_error);
+        if(pid_output > pid_max)pid_output = pid_max;   // Limit the PI-controller to the maximum controller output
         else if(pid_output < pid_min)pid_output = pid_min;
-        pid_last_d_error = pid_error_temp; // Store the error for the next loop
+        pid_last_d_error = pid_error_temp;              // Store the error for the next loop
 
         if(pid_output < 5 && pid_output > -5)pid_output = 0; // Create a dead-band to stop the motors when the robot 
                                                             // is balanced
 
-        if(angle_gyro > 30 || angle_gyro < -30 || start == 0 || low_bat == 1) // If the robot tips over or the start 
-                                                                            // variable is zero or the battery is 
-                                                                            // empty
+        if(angle_gyro > 30 || angle_gyro < -30 || start == 0 ) // If the robot tips over or the start variable is zero
         {
             pid_output = 0; // Set the PID controller output to 0 so the motors stop moving
             pid_i_mem = 0; // Reset the I-controller memory
             start = 0; // Set the start variable to 0
-            self_balance_pid_setpoint = 0; // Reset the self_balance_pid_setpoint variable
             throttle_left_motor = 0; // stop the wheels from moving
             throttle_right_motor = 0;
         } //if
@@ -1847,49 +1879,8 @@ void balanceRobot()
                                        // left motor
         pid_output_right = pid_output; // Copy the controller output to the pid_output_right variable for the 
                                        // right motor
-        if(received_byte & B00000001)  // If the first bit of the receive byte is set change the left and right 
-        {                              // variable to turn the robot to the left
-            pid_output_left += turning_speed; // Increase the left motor speed
-            pid_output_right -= turning_speed; // Decrease the right motor speed
-        } //if
-        if(received_byte & B00000010) // If the second bit of the receive byte is set change the left and right 
-        {                             // variable to turn the robot to the right
-            pid_output_left -= turning_speed; // Decrease the left motor speed
-            pid_output_right += turning_speed; // Increase the right motor speed
-        } //if
-        if(received_byte & B00000100) // If the third bit of the receive byte is set change the left and right 
-        {                             // variable to turn the robot to the right
-            if(pid_setpoint > -2.5)pid_setpoint -= 0.05; // Slowly change the setpoint angle so the robot starts 
-                                                        // leaning forewards
-            if(pid_output > max_target_speed * -1)pid_setpoint -= 0.005; // Slowly change the setpoint angle so 
-                                                                        // the robot starts leaning forewards
-        } //if
-        if(received_byte & B00001000) // If the forth bit of the receive byte is set change the left and right 
-        {                             // variable to turn the robot to the right
-            if(pid_setpoint < 2.5)pid_setpoint += 0.05; // Slowly change the setpoint angle so the robot starts 
-                                                        // leaning backwards
-            if(pid_output < max_target_speed)pid_setpoint += 0.005; // Slowly change the setpoint angle so the 
-                                                                    // robot starts leaning backwards
-        } //if   
-        if(!(received_byte & B00001100)) // Slowly reduce the setpoint to zero if no foreward or backward command 
-                                        // is given
-        {
-            if(pid_setpoint > 0.5)pid_setpoint -=0.05; // If the PID setpoint is larger then 0.5 reduce the setpoint 
-                                                    // with 0.05 every loop
-            else if(pid_setpoint < -0.5)pid_setpoint +=0.05; // If the PID setpoint is smaller then -0.5 increase 
-                                                            // the setpoint with 0.05 every loop
-            else pid_setpoint = 0; // If the PID setpoint is smaller then 0.5 or larger then -0.5 set the setpoint 
-                                // to 0
-        } //if
-        //The self balancing point is adjusted when there is not forward or backwards movement from the transmitter. 
-        // This way the robot will always find it's balancing point
-        if(pid_setpoint == 0) // If the setpoint is zero degrees
-        {
-            //if(pid_output < 0)self_balance_pid_setpoint += 0.0015; // Increase the self_balance_pid_setpoint if the 
-                                                                    // robot is still moving forewards
-            //if(pid_output > 0)self_balance_pid_setpoint -= 0.0015; // Decrease the self_balance_pid_setpoint if the 
-                                                                    // robot is still moving backwards
-        } //if
+// numchuk related adjustments here were deleted
+
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         // Motor Pulse calculations. To compensate for the non-linear behaviour of the stepper motors the 
         // following calculations are needed to get a linear speed behaviour.
@@ -1942,14 +1933,30 @@ void balanceRobot()
             throttle_right_motor_memory = 0;          // force new speed into immediate effect  
             interrupts();                           
         } //else
+
+        // generate telemetry data at the end of the 4 msec loop
+
+            String sTmp = String(micros()) ;            // timestamp in microseconds
+            sTmp += "," + String(angle_gyro) ;          // sensed angle via gyro
+            sTmp += "," + String(angle_acc) ;           // sensed angle via accelerometer
+            sTmp += "," + String(start) ;               // our wheel enable control
+            sTmp += "," + String(left_motor) ;          // step interval counter passed to ISR
+            sTmp += "," + String(pid_error_temp) ;      // current angle error (=angle)
+            sTmp += "," + String(hold3) ;               // raw total pid output
+            sTmp += "," + String(pid_output) ;          // cleaned up total pid output
+            sTmp += "," + String(pid_i_mem) ;           // I component in PID, incl gain
+            sTmp += "," + String(hold1) ;               // increment in the I component, incl gain
+            sTmp += "," + String(hold2) ;               // raw pid_i_mem before cleaning, incl gain
+            sTmp += "," + String(hold4) ;               // P component in PID, incl gain
+            sTmp += "," + String(hold5) ;               // D component in PID, incl gain
+
+            reportTel(sTmp); // Example of how to send telemetry 
+
+
         // do some debug output to serial monitor to see whats going on
         //count 4 millesecond loops to get to a second, and dump debug info once a second
         if (i++ > 250) // if a full second has passed, display debug info
         {
-            String sTMP = String(left_motor) + ","; // Variable that will hold data to send
-            sTMP += String(pid_i_mem) + ","; // Append data you want to send
-            sTMP += String(angle_acc); // Append data you want to send
-            reportTel(sTMP); // Example of how to send telemetry 
             i = 0; // prepare to count up to next second
 //            float dtmp = angle_gyro; // temp cheat to help tune balance point
             spd("--pid_error_temp= ",pid_error_temp); spd("  angle_gyro= ",angle_gyro); 
@@ -1968,7 +1975,7 @@ void balanceRobot()
         } //if
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////
-        // Poll network services for client activity. Note each of these polls are meant to run in a seperate 
+        // Poll network services for client activity. Note each of these polls are meant to run in a separate 
         // thread, which may be commented out in setup()
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         //server.handleClient(); // Poll for web server client
