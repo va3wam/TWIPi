@@ -100,8 +100,12 @@ void loop()
              count step pulses per 4msec loop
              figure out why telemetry has long gaps of multiple 4msec intervals. PC? ESP32? algorithm?
              convert LINE() macro calls to LINE_TIME() which logs text arg and appends source code line and millis() - done
-             allow robot to continue and balance if it can't find a WiFi network. se variable WiFi_active
+             allow robot to continue and balance if it can't find a WiFi network. see variable WiFi_active - done
              recreate the original "linear behaviour" for PID > wheel control mapping
+             mount a Bobrow IMU for comparison / calibration
+             add column titles and key parameter dump to telemetry data - done
+             change wheel speed range to faster half of original range for more aggressive start
+             map out Joop's pid to step count formulas for comparison
   2.2.8   2019-01-01 - return IMU warmup to 11 seconds so it's stable before calibration, 
           -split IMS initialization into two parts to allow network startup to run in parallel
           -add timeline macro to output timestamps + line numbers during setup()
@@ -249,11 +253,12 @@ int acc_calibration_value; // Balance point of robot when balancing on its wheel
 int balance_37_54_f8 = 0;  // TWIPi MAC address: 30:AE:A4:37:54:F8 has this acc_calibration_value 
 
 const volatile int speed = -1; // for initial testing of interrupt driven steppers
+//const volatile int speed = 200; // for initial testing of interrupt driven steppers
                                // speed = -1 enables IMU based balancing. 
                                // speed = n enables fixed forward speed interval of n
                                //         0 is brakes on
-const int bot_slow = 2300; // # of interrupts between steps at slowest workable bot speed
-const int bot_fast = 300; // # of interrupts between steps at fastest workable bot speed
+const int bot_slow = 1000; // # of interrupts between steps at slowest workable bot speed
+const int bot_fast = 500; // # of interrupts between steps at fastest workable bot speed
 
 /***********************************************************************************************************
  Define PID control variables and constants
@@ -265,8 +270,8 @@ const int bot_fast = 300; // # of interrupts between steps at fastest workable b
 // back to above 2018-12-11
 // based on telemetry, on jan 7: 15, 0.4, 10
 float pid_p_gain = 15;          // Gain setting for the P-controller (15)
-float pid_i_gain = 0.4;         // Gain setting for the I-controller (1.5)
-float pid_d_gain = 10;          // Gain setting for the D-controller (30)
+float pid_i_gain = 0.0;         // Gain setting for the I-controller (1.5)
+float pid_d_gain = 0.0;         // Gain setting for the D-controller (30)
 const long usec_per_t0_int = 20; // Number of microseconds between t0 timer interrupts
 const int pid_max = 400;        // Upper bound for pid values
 const int pid_min = -400;       // Lower bound for pid values
@@ -382,8 +387,8 @@ String LCDmsg1 = ""; // Track message displayed in line 2 of LCD
 #define LoopDelay 4000 // This is the target time in milliseconds that each iteration of balanceRobot() should take.
                         // this is built into angle calculations, and can't be easily changed
 
-String sendTelemetry = "flagoff"; // Flag to control if balance telemetry data is sent 
-                                  // to connected clients
+String sendTelemetry = "flagoff"; // Flag to control if balance telemetry data is sent to connected clients
+bool new_telemetry = true;  // flag start of new telemetry when start becomes 1, do send params & headers
 bool WiFi_active = false;   // flag to say whether or not attempy to connect to a known WiFi network was successful
 
 /***********************************************************************************************************
@@ -739,7 +744,7 @@ void startWiFi()
     WiFi_active = false; // initial assumption is that we aren't able to connect to WiFi
     sp(" [startWifi] initial wifiMulti.run() returned ");
     sp(wifiMulti.run());
-    for ( int cnt=1; cnt<20; cnt -- )
+    for ( int cnt=1; cnt<20; cnt ++ )
     {   if(WiFi_active == false) 
         {   if (wifiMulti.run() == WL_CONNECTED)
             {   WiFi_active = true ;           // note that we did manage to connect to WiFi                                                               
@@ -1445,7 +1450,6 @@ void initializeIMU_1()
         spl(" [initializeIMU_2] ERROR! Robot will not be able to balance");
     } //else
 
-
 //  The rest of the IMU initialization is done in routine initializeIMU_2, which follows
 } //initializeIMU_1()
 
@@ -1534,6 +1538,7 @@ void initializeIMU_2()
             spl(balance_calibration_value);
             sp(" [initializeIMU]: acc_calibration_value currently set to ");
             spl(acc_calibration_value);
+    pid_last_d_error = 0;               // saw some weird initial values
     spl(" [initializeIMU_2] IMU initialization complete.");
     imuReady = true ;
     //vTaskDelete( NULL );
@@ -1657,14 +1662,14 @@ void setup()
     sendLCD("Boot Sequence",LINE1); // Boot message to LCD line 1
     spl(" [setup] Initialize IMU part 1");
     sendLCD("Init IMU part 1",LINE2); // Send more boot message to LCD line 2
-    initializeIMU_1();         // move this earlier to maximize overlapping processing
+    if (speed < 0) initializeIMU_1();         // move this earlier to maximize overlapping processing
     sendLCD("Init Motors",LINE2); // Send more boot message to LCD line 2
     initializeMotorControllers(); // Initialize the motor controllers
     sendLCD("Start WiFi",LINE2); // Starting WiFi message to LCD line 2
-    startWiFi(); // Start WiFi and connect to AP
+    if (speed < 0) startWiFi(); // Start WiFi and connect to AP
     startDNS(); // Start domain name service
     sendLCD("Start Webserver",LINE2); // Starting Webserver message to LCD line 2
-    startWebServer(); // Start web service 
+    if (speed < 0) startWebServer(); // Start web service 
     sendLCD("Start Websockets",LINE2); // Starting Websockets message to LCD line 2
     startWebsocket(); // Include libaries in Websockets.h missing. Need to fix this.
     sendLCD("Monitor Socket",LINE2); // Send more boot message to LCD line 2
@@ -1685,7 +1690,7 @@ void setup()
         0); // Specify which of the two CPU cores to pin this task to
     spl(" [setup] Initialize IMU part 2");
     sendLCD("Init IMU part 2",LINE2); // Send more boot message to LCD line 2
-    initializeIMU_2();
+    if (speed < 0) initializeIMU_2();
     sendLCD("Balance Task",LINE2); // Send more boot message to LCD line 2
     
 /*
@@ -1789,6 +1794,7 @@ void balanceRobot()
         {
             angle_gyro = angle_acc;                 // Load the accelerometer angle in the angle_gyro variable
             start = 1;                              // Set the start variable to start the PID controller
+            new_telemetry = true;                  // flag the need to put params & column titles into telemetry
         } //if
 
         Wire1.beginTransmission(MPU_address); // Start communication with the gyro
@@ -1825,7 +1831,7 @@ void balanceRobot()
 //        angle_gyro += gyro_pitch_data_raw * 0.0000003; // Compensate the gyro offset when the robot is rotating
 
 //angle_gyro = angle_gyro * 0.9996 + angle_acc * 0.0004; // Correct drift of gyro angle with the accelerometer angle
-        angle_gyro = angle_gyro * 0.996 + angle_acc * 0.004; // Correct drift of gyro angle with the accelerometer angle
+        angle_gyro = angle_gyro * 0.99 + angle_acc * 0.01; // Correct drift of gyro angle with the accelerometer angle
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         // PID controller calculations. The balancing robot is angle driven. First the difference between the 
@@ -1928,13 +1934,24 @@ void balanceRobot()
         {
             noInterrupts(); // ensure interrupt can't happen when only one wheel is updated
             throttle_left_motor = left_motor; 
-            throttle_left_motor_memory = 0;           // force new speed into immediate effect  
+//            throttle_left_motor_memory = 0;           // force new speed into immediate effect  
             throttle_right_motor = right_motor; 
-            throttle_right_motor_memory = 0;          // force new speed into immediate effect  
+//            throttle_right_motor_memory = 0;          // force new speed into immediate effect  
             interrupts();                           
         } //else
 
         // generate telemetry data at the end of the 4 msec loop
+    if ( start == 1)                                    // skip boring entries where we're not balancing
+    {
+        if(new_telemetry == true)                       // if we're starting a new run because start = 1, output telemetry header
+        {   new_telemetry = false ;                     // just do this once, when start changed to 1
+            reportTel(String(__DATE__)+","+String(__TIME__)+", Ver=,"+String(my_ver));
+            String sTmp = String("Pg Ig Dg:,")+String(pid_p_gain)+","+String(pid_i_gain)+","+String(pid_d_gain);
+            reportTel(String("fast/slow,")+String(bot_fast)+","+String(bot_slow));
+            reportTel(sTmp);
+            reportTel("micros,ang_g,ang_a,start,lft_mtr,p_err_tmp,raw p_out,pid_out,I,I_inc,raw P_I_mem,P,D");
+
+        }
 
             String sTmp = String(micros()) ;            // timestamp in microseconds
             sTmp += "," + String(angle_gyro) ;          // sensed angle via gyro
@@ -1951,7 +1968,7 @@ void balanceRobot()
             sTmp += "," + String(hold5) ;               // D component in PID, incl gain
 
             reportTel(sTmp); // Example of how to send telemetry 
-
+    } // if start == 1
 
         // do some debug output to serial monitor to see whats going on
         //count 4 millesecond loops to get to a second, and dump debug info once a second
