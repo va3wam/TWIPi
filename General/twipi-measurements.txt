@@ -1,0 +1,23 @@
+using robots left wheel,
+
+step goes to gpio 32, pin 20
+  step is beside dir, one pin in from end of line
+dir goes to gpio 14, pin 19
+  dir is pin on side where pot is, on opposite end of the line
+
+sleep and reset are next to dir
+
+On DRV825
+dir
+
+robot measurements
+ weight = approximately 4 pounds, 1.8 Kg
+ height = 10 inches
+ axle height = 2 inches 
+ mass distribution: 6.5 inches above axle
+ 
+assume a max travel speed of 12 inches / second
+
+------------
+
+if he's at 5 degree tilt, what torque is needed to
