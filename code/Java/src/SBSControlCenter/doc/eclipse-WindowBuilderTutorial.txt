@@ -1,0 +1,90 @@
+Create a new WindowBuilder Java application in Eclipse
+Instructions from: https://examples.javacodegeeks.com/desktop-java/ide/eclipse/eclipse-window-builder-tutorial-gui-creation/
+Steps:
+1. Create new project
+- Click on File=>New=>Other
+- Browse to WindowBuilder=>SWT Designer and choose SWT/JFace Java Project. Click Next.
+- In the ‘Project name:’ text box give the project name. We will use WindowBuilderProject. Leave the other options as default and click Finish.
+
+2. Create new SWT (Standard Widget Toolkit) application
+- Click on File=>New=>Other
+- Browse to WindowBuilder=>SWT Designer=>SWT and choose ‘Application Window’ 
+- Click Next
+- Enter the Name and select the project created in step 1
+- Click on Finish
+
+3. Go into design View
+- Click on the class you just created
+- Click the Design View tab
+
+Add graphing capabilities to Java using JFreechart
+Instructions from: http://www.codejava.net/java-se/graphics/using-jfreechart-to-draw-xy-line-chart-with-xydataset
+
+1. To use JFreechart in your project, add the following JAR files to the project’s classpath
+- Create lib directory in your project
+- Copy over these files
+    jcommon-VERSION.jar
+    jfreechart-VERSION.jar
+- In Eclipse, left click on the project name=>Build Path=>Add External archives
+- Select both jar filesAdd charts
+
+Creating JFreechart classes
+1. This is a very good link for embedding JFreechart into a Java GUI using WindowBuilder: http://junaedhalim.blogspot.ca/2009/12/how-to-embed-jfreechart-in-jpanel.html
+
+JSON parse name/value pair formatted message
+		// Create data set to be used by chart
+		DefaultPieDataset result = new DefaultPieDataset();               
+        result.setValue("Linux", 29);
+        result.setValue("Mac", 20);
+        result.setValue("Windows", 51);
+
+        // Define JFreechart look 
+        JFreeChart chart = ChartFactory.createPieChart3D
+        (
+            "Pie Chart",           // chart title
+            result,                // data
+            true,                  // include legend
+            true,                  // ??
+            false                  // ??
+        );
+
+JSON parse array formatted message       
+        // Quick parse of JSON array message
+        JSONParser parser = new JSONParser();
+        String s = "[0,{\"1\":{\"2\":{\"3\":{\"4\":[5,{\"6\":7}]}}}}]";  		
+        try
+        {
+           Object objIN = parser.parse(s);
+           JSONArray array = (JSONArray)objIN;
+  			
+           System.out.println("The 2nd element of array");
+           System.out.println(array.get(1));
+           System.out.println();
+
+           JSONObject obj2 = (JSONObject)array.get(1);
+           System.out.println("Field \"1\"");
+           System.out.println(obj2.get("1"));    
+
+           s = "{}";
+           objIN = parser.parse(s);
+           System.out.println(objIN);
+
+           s = "[5,]";
+           objIN = parser.parse(s);
+           System.out.println(objIN);
+
+           s = "[5,,2]";
+           objIN = parser.parse(s);
+           System.out.println(objIN);
+        }
+        catch(ParseException pe)
+        {
+  		
+           System.out.println("position: " + pe.getPosition());
+           System.out.println(pe);
+        }   	
+    
+
+
+
+
