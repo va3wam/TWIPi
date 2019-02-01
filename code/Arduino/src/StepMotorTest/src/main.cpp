@@ -53,15 +53,17 @@ void setup()
   digitalWrite(leftMotorDir, 1);   // Set motor direction
   digitalWrite(rightMotorDir, 1);   // Set motor direction
   duty_cycle = 50; // Up time per cycle (percentage)
-  freq = 250; // Frequency in kHz
-  period = 1/freq*1000; // Length of cycle in microseconds
+//  freq = 250000; // Max FREQ of DRV8825 is 250000Hz
+//  freq = 23; // Slowest speed TWIPI goes at right now 23Hz
+  freq = 167; // Fastest speed TWIPI goes at right now 167Hz
+  period = 1/freq; // Length of cycle in seconds
   uptime = period*(duty_cycle/100); // Time to leave signal high in microseconds
   downtime = period-uptime; // Time to leave signal low in microseconds
   Serial.println("");
   Serial.printf("[setup] Parameters for this test...\n");
-  Serial.printf("[setup] Frequency = %f kHz (period of %f microseconds)\n",freq,period);
+  Serial.printf("[setup] Frequency = %f Hz (period of %f seconds)\n",freq,period);
   Serial.printf("[setup] Duty cycle = %f percent\n",duty_cycle);
-  Serial.printf("[setup] Uptime = %f microseconds. Downtime = %f microseconds\n",uptime,downtime);
+  Serial.printf("[setup] Uptime = %f seconds. Downtime = %f seconds\n",uptime,downtime);
   runTime = micros(); // Note the time that this microprocessor has been running in microseconds
 } //setup()
 
@@ -72,8 +74,8 @@ void loop()
 {
   digitalWrite(leftMotorStep, 1);   // Set step pin high
   digitalWrite(rightMotorStep, 1);   // Set step pin high
-  delayMicroseconds(uptime);
+  delayMicroseconds(uptime*1000000); // Expressed in microseconds
   digitalWrite(leftMotorStep, 0);   // Set step pin low
   digitalWrite(rightMotorStep, 0);   // Set step pin low
-  delayMicroseconds(downtime);
+  delayMicroseconds(downtime*1000000); // Expressed in microseconds
 } //loop()
