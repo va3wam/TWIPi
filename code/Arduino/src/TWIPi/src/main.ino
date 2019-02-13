@@ -252,7 +252,7 @@ int acc_calibration_value; // Balance point of robot when balancing on its wheel
                            // The MAC address read from the hardware selects one of these values:
 int balance_37_54_f8 = 0;  // TWIPi MAC address: 30:AE:A4:37:54:F8 has this acc_calibration_value 
 
-const volatile int speed = 300; // for initial testing of interrupt driven steppers
+const volatile int speed = 1300; // for initial testing of interrupt driven steppers
 //const volatile int speed = 200; // for initial testing of interrupt driven steppers
                                // speed = -1 enables IMU based balancing. 
                                // speed = n enables fixed forward speed interval of n
