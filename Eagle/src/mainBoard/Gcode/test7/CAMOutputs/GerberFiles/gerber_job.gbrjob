@@ -1,0 +1,24 @@
+{
+    "Header": {
+        "Comment": "All values are metric (mm)",
+        "CreationDate": "2019-01-30T19:44:04Z",
+        "GenerationSoftware": {
+            "Application": "EAGLE",
+            "Vendor": "Autodesk",
+            "Version": "9.3.0"
+        },
+        "Part": "Single"
+    },
+    "Overall": {
+        "BoardThickness": 1.57,
+        "LayerNumber": 2,
+        "Name": {
+            "ProjectId": "twip-mb2"
+        },
+        "Owner": "Andrew Mitchell <va3wam@gmail.com>",
+        "Size": {
+            "X": 82.22,
+            "Y": 82.54
+        }
+    }
+}
