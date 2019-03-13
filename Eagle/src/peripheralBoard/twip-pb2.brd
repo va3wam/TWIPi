@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="50" unitdist="mil" unit="mil" style="lines" multiple="10" display="yes" altdistance="5" altunitdist="mil" altunit="mil"/>
+<grid distance="50" unitdist="mil" unit="inch" style="lines" multiple="2" display="yes" altdistance="5" altunitdist="mil" altunit="inch"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
 <layer number="16" name="Bottom" color="1" fill="1" visible="yes" active="yes"/>
@@ -68,6 +68,7 @@
 <dimension x1="105.41" y1="0" x2="105.41" y2="40.64" x3="102.87" y3="20.32" textsize="1.778" layer="1" unit="inch"/>
 <dimension x1="102.87" y1="40.64" x2="102.87" y2="55.88" x3="97.79" y3="48.26" textsize="1.778" layer="1" unit="inch"/>
 <dimension x1="105.41" y1="40.64" x2="105.41" y2="60.96" x3="102.87" y3="50.8" textsize="1.778" layer="1" unit="inch"/>
+<dimension x1="-1.27" y1="-5.08" x2="93.98" y2="-5.08" x3="46.355" y3="-8.89" textsize="1.778" layer="1" unit="inch"/>
 </plain>
 <libraries>
 <library name="display-hp" urn="urn:adsk.eagle:library:212">
