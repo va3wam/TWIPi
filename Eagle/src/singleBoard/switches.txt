@@ -1,0 +1,30 @@
+Battery Enable switch
+-blue LED
+-LED monitors 12V battery output
+-common - 14.4/20V input to regulator
+- NO - battery
+- NC - no connection
+
+5V Source select
+-red LED
+-LED on if 5V comes from battery - implementation?
+-LED off if 5V comes from USB
+-common - 5V feed to ESP32 & LCD
+- NC -5V output from regulator
+- NO -5V feed from USB jack
+
+Reset
+-green LED
+-LED monitors 5V going to ESP32
+-could be momemtary switch, or could make all switches interchangeable
+-common - ground
+- NO - ESP32 reset pin
+- NC - no connection
+
+Software controlled LED, Software readable input
+-white LED
+-LED monitors software controlled LED signal 
+-common - GPio pin that software reads
+- NO - 3.3V  with pulldown
+- NC - no connection
+

@@ -87,4 +87,4 @@ client.on('connect', function(connection)
     //sendNumber();
 });
  
-client.connect('ws://192.168.2.70:81/');
+client.connect('ws://192.168.0.22:81/');

@@ -25,7 +25,8 @@
             function connect() 
             {         
                console.log("[connect] Connecting to TWIPi");
-               wsocket = new WebSocket("ws://192.168.2.70:81");  
+            //   wsocket = new WebSocket("ws://192.168.2.70:81");  
+               wsocket = new WebSocket("ws://192.168.0.22:81");  
                wsocket.onmessage = onMessage; 
                document.getElementById("fileName").innerHTML = fileName;     
                document.getElementById("directory").innerHTML = directory;     
