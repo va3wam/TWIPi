@@ -141,6 +141,7 @@
 <layer number="255" name="routoute" color="7" fill="1" visible="yes" active="yes"/>
 </layers>
 <schematic xreflabel="%F%N/%S.%C%R" xrefpart="/%S.%C%R">
+<fusionteam huburn="a.cGVyc29uYWw6dWUyZDlkNTAx" projecturn="a.cGVyc29uYWw6dWUyZDlkNTAxIzIwMTgxMDI0MTU2NDI4OTAx" folderUrn="urn:adsk.wipprod:fs.folder:co.2BqjnTGbTT6upBgEN9nZog" urn="urn:adsk.wipprod:dm.lineage:_tOHiFx4Re2g77K_aZ9Fvw"  versionUrn="urn:adsk.wipprod:fs.file:vf._tOHiFx4Re2g77K_aZ9Fvw?version=2" camFileUrn="" camFileVersionUrn="" lastpublishedchangeguid="dc690758-bbeb-8dcc-183a-74d4a72b08fc"/>
 <libraries>
 <library name="gy-521">
 <packages>

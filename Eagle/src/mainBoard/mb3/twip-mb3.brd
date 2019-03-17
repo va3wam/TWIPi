@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="9.2.1">
+<eagle version="9.3.0">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
@@ -142,6 +142,7 @@
 </layers>
 <board>
 <fusionsync huburn="a.cGVyc29uYWw6dWUyZDlmNmRl" projecturn="a.cGVyc29uYWw6dWUyZDlkNTAxIzIwMTgwODE4MTQ0NTE2MDUx" f3durn="urn:adsk.wipprod:dm.lineage:mZQQhy41S56UHTnbtTcFSg" pcbguid="5c8f9e4c-5e44-4e24-adda-79e9213756c3" lastpulledtime="" lastsyncedchangeguid="07d5f81c-c805-9028-98e1-ee9b7489bb23"/>
+<fusionteam huburn="a.cGVyc29uYWw6dWUyZDlkNTAx" projecturn="a.cGVyc29uYWw6dWUyZDlkNTAxIzIwMTgxMDI0MTU2NDI4OTAx" folderUrn="urn:adsk.wipprod:fs.folder:co.2BqjnTGbTT6upBgEN9nZog" urn="urn:adsk.wipprod:dm.lineage:-UJEySlCQQuUlzjY9LwbOg"  versionUrn="urn:adsk.wipprod:fs.file:vf.-UJEySlCQQuUlzjY9LwbOg?version=2" camFileUrn="urn:adsk.wipprod:dm.lineage:Og6vURI4QiiZxKYsH11uAQ" camFileVersionUrn="urn:adsk.wipprod:fs.file:vf.Og6vURI4QiiZxKYsH11uAQ?version=2" lastpublishedchangeguid="d7974a52-0e01-c781-4f41-a9c2dc8d5610"/>
 <plain>
 <wire x1="0" y1="0" x2="82.22" y2="0" width="0" layer="20"/>
 <wire x1="82.22" y1="0" x2="82.22" y2="82.54" width="0" layer="20"/>
