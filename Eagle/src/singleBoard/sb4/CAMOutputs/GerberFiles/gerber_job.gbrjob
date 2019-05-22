@@ -1,7 +1,7 @@
 {
     "Header": {
         "Comment": "All values are metric (mm)",
-        "CreationDate": "2019-05-14T04:04:21Z",
+        "CreationDate": "2019-05-15T18:37:22Z",
         "GenerationSoftware": {
             "Application": "EAGLE",
             "Vendor": "Autodesk",
@@ -13,7 +13,7 @@
         "BoardThickness": 1.57,
         "LayerNumber": 2,
         "Name": {
-            "ProjectId": "sb4b"
+            "ProjectId": "sb4"
         },
         "Owner": "Doug Elliott <canoe.eh@gmail.com>",
         "Size": {
