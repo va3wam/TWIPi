@@ -673,6 +673,88 @@ standard rectifier, 3 A, 50 V (Motorola)</description>
 </deviceset>
 </devicesets>
 </library>
+<library name="con-samtec" urn="urn:adsk.eagle:library:184">
+<description>&lt;b&gt;Samtec Connectors&lt;/b&gt;&lt;p&gt;
+&lt;author&gt;Created by librarian@cadsoft.de&lt;/author&gt;</description>
+<packages>
+<package name="TSW-101-XX-G-S" library_version="2">
+<description>&lt;b&gt;THROUGH-HOLE .025" SQ POST HEADER&lt;/b&gt;&lt;p&gt;
+Source: Samtec TSW.pdf</description>
+<wire x1="-1.399" y1="1.155" x2="1.399" y2="1.155" width="0.2032" layer="21"/>
+<wire x1="1.399" y1="1.155" x2="1.399" y2="-1.155" width="0.2032" layer="21"/>
+<wire x1="1.399" y1="-1.155" x2="-1.399" y2="-1.155" width="0.2032" layer="21"/>
+<wire x1="-1.399" y1="-1.155" x2="-1.399" y2="1.155" width="0.2032" layer="21"/>
+<pad name="1" x="0" y="0" drill="1" diameter="1.5" shape="octagon" rot="R180"/>
+<text x="-0.258" y="-2.498" size="1.1" layer="21" font="vector" rot="SR0">1</text>
+<text x="-1.905" y="-1.27" size="1.27" layer="25" rot="R90">&gt;NAME</text>
+<text x="3.175" y="-1.27" size="1.27" layer="27" rot="R90">&gt;VALUE</text>
+<rectangle x1="-0.35" y1="-0.35" x2="0.35" y2="0.35" layer="51"/>
+</package>
+<package name="TSW-101-08-G-S-RA" library_version="2">
+<description>&lt;b&gt;THROUGH-HOLE .025" SQ POST HEADER&lt;/b&gt;&lt;p&gt;
+Source: Samtec TSW.pdf</description>
+<wire x1="-1.399" y1="-2.046" x2="1.399" y2="-2.046" width="0.2032" layer="21"/>
+<wire x1="1.399" y1="-2.046" x2="1.399" y2="-0.106" width="0.2032" layer="21"/>
+<wire x1="1.399" y1="-0.106" x2="-1.399" y2="-0.106" width="0.2032" layer="21"/>
+<wire x1="-1.399" y1="-0.106" x2="-1.399" y2="-2.046" width="0.2032" layer="21"/>
+<pad name="1" x="0" y="1.524" drill="1" diameter="1.5" shape="octagon" rot="R180"/>
+<text x="-1.905" y="-7.62" size="1.27" layer="25" rot="R90">&gt;NAME</text>
+<text x="3.175" y="-7.62" size="1.27" layer="27" rot="R90">&gt;VALUE</text>
+<text x="1.282" y="1.152" size="1.1" layer="21" font="vector" rot="SR0">1</text>
+<rectangle x1="-0.254" y1="0" x2="0.254" y2="1.778" layer="51"/>
+<rectangle x1="-0.254" y1="-7.89" x2="0.254" y2="-2.04" layer="21"/>
+</package>
+</packages>
+<symbols>
+<symbol name="MPINV" library_version="2">
+<text x="-1.27" y="1.27" size="1.778" layer="96">&gt;VALUE</text>
+<text x="2.54" y="-0.762" size="1.524" layer="95">&gt;NAME</text>
+<rectangle x1="0" y1="-0.254" x2="1.778" y2="0.254" layer="94"/>
+<pin name="1" x="-2.54" y="0" visible="off" length="short" direction="pas"/>
+</symbol>
+</symbols>
+<devicesets>
+<deviceset name="TSW-101-*-G-S" prefix="X" library_version="2">
+<description>&lt;b&gt;THROUGH-HOLE .025" SQ POST HEADER&lt;/b&gt;&lt;p&gt;
+Source: Samtec TSW.pdf</description>
+<gates>
+<gate name="-1" symbol="MPINV" x="-1.27" y="0" addlevel="always"/>
+</gates>
+<devices>
+<device name="" package="TSW-101-XX-G-S">
+<connects>
+<connect gate="-1" pin="1" pad="1"/>
+</connects>
+<technologies>
+<technology name="07">
+<attribute name="MF" value="Samtec Inc." constant="no"/>
+<attribute name="MPN" value="TSW-101-07-G-S" constant="no"/>
+<attribute name="OC_FARNELL" value="" constant="no"/>
+<attribute name="OC_NEWARK" value="" constant="no"/>
+</technology>
+<technology name="08">
+<attribute name="MF" value="Samtec Inc." constant="no"/>
+<attribute name="MPN" value="TSW-101-07-G-S" constant="no"/>
+<attribute name="OC_FARNELL" value="" constant="no"/>
+<attribute name="OC_NEWARK" value="" constant="no"/>
+</technology>
+</technologies>
+</device>
+<device name="-S-RA" package="TSW-101-08-G-S-RA">
+<connects>
+<connect gate="-1" pin="1" pad="1"/>
+</connects>
+<technologies>
+<technology name="08">
+<attribute name="MF" value="Samtec Inc." constant="no"/>
+<attribute name="MPN" value="TSW-101-08-G-S-RA" constant="no"/>
+</technology>
+</technologies>
+</device>
+</devices>
+</deviceset>
+</devicesets>
+</library>
 </libraries>
 <attributes>
 </attributes>
@@ -683,16 +765,20 @@ standard rectifier, 3 A, 50 V (Motorola)</description>
 </class>
 </classes>
 <parts>
-<part name="CON1" library="con-harting" library_urn="urn:adsk.eagle:library:151" deviceset="CON16" device="" package3d_urn="urn:adsk.eagle:package:7118/1"/>
-<part name="JP2" library="pinhead" library_urn="urn:adsk.eagle:library:325" deviceset="PINHD-1X2" device="" package3d_urn="urn:adsk.eagle:package:22435/2"/>
+<part name="CON1" library="con-harting" library_urn="urn:adsk.eagle:library:151" deviceset="CON16" device="" package3d_urn="urn:adsk.eagle:package:7118/1" value="PLU-MB-CBL"/>
+<part name="JP2" library="pinhead" library_urn="urn:adsk.eagle:library:325" deviceset="PINHD-1X2" device="" package3d_urn="urn:adsk.eagle:package:22435/2" value="BAT2PLU"/>
 <part name="S1" library="UB16SKG035C-CC" deviceset="UB16SKG035C-CC" device=""/>
 <part name="S2" library="UB16SKG035C-CC" deviceset="UB16SKG035C-CC" device=""/>
 <part name="S3" library="UB16SKG035C-CC" deviceset="UB16SKG035C-CC" device=""/>
 <part name="S4" library="UB16SKG035C-CC" deviceset="UB16SKG035C-CC" device=""/>
-<part name="JP1" library="pinhead" library_urn="urn:adsk.eagle:library:325" deviceset="PINHD-1X2" device="" package3d_urn="urn:adsk.eagle:package:22435/2"/>
+<part name="JP1" library="pinhead" library_urn="urn:adsk.eagle:library:325" deviceset="PINHD-1X2" device="" package3d_urn="urn:adsk.eagle:package:22435/2" value="PWR2MB"/>
 <part name="J1" library="5787834-2" deviceset="5787834-2" device=""/>
 <part name="D1" library="diode" library_urn="urn:adsk.eagle:library:210" deviceset="1N5400" device="" package3d_urn="urn:adsk.eagle:package:43365/1"/>
 <part name="D2" library="diode" library_urn="urn:adsk.eagle:library:210" deviceset="1N5400" device="" package3d_urn="urn:adsk.eagle:package:43365/1"/>
+<part name="X1" library="con-samtec" library_urn="urn:adsk.eagle:library:184" deviceset="TSW-101-*-G-S" device="" technology="07" value="Jmpr"/>
+<part name="X2" library="con-samtec" library_urn="urn:adsk.eagle:library:184" deviceset="TSW-101-*-G-S" device="" technology="07" value="Jmpr"/>
+<part name="X3" library="con-samtec" library_urn="urn:adsk.eagle:library:184" deviceset="TSW-101-*-G-S" device="" technology="07" value="Jmpr"/>
+<part name="X4" library="con-samtec" library_urn="urn:adsk.eagle:library:184" deviceset="TSW-101-*-G-S" device="" technology="07" value="Jmpr"/>
 </parts>
 <sheets>
 <sheet>
@@ -712,7 +798,7 @@ Board</text>
 </plain>
 <instances>
 <instance part="CON1" gate="G$1" x="71.12" y="-116.84" smashed="yes" rot="R180">
-<attribute name="VALUE" x="74.93" y="-101.6" size="1.778" layer="96" rot="R180"/>
+<attribute name="VALUE" x="78.74" y="-101.092" size="1.778" layer="96" rot="R180"/>
 <attribute name="NAME" x="74.93" y="-127.762" size="1.778" layer="95" rot="R180"/>
 </instance>
 <instance part="JP2" gate="G$1" x="7.62" y="-17.78" smashed="yes">
@@ -751,6 +837,22 @@ Board</text>
 <attribute name="NAME" x="30.48" y="-40.1574" size="1.778" layer="95"/>
 <attribute name="VALUE" x="31.496" y="-47.5234" size="1.778" layer="96"/>
 </instance>
+<instance part="X1" gate="-1" x="97.79" y="-83.82" smashed="yes" rot="R270">
+<attribute name="VALUE" x="99.06" y="-82.55" size="1.778" layer="96" rot="R270"/>
+<attribute name="NAME" x="97.028" y="-86.36" size="1.524" layer="95" rot="R270"/>
+</instance>
+<instance part="X2" gate="-1" x="92.71" y="-83.82" smashed="yes" rot="R270">
+<attribute name="VALUE" x="93.98" y="-82.55" size="1.778" layer="96" rot="R270"/>
+<attribute name="NAME" x="91.948" y="-86.36" size="1.524" layer="95" rot="R270"/>
+</instance>
+<instance part="X3" gate="-1" x="85.09" y="-88.9" smashed="yes" rot="R270">
+<attribute name="VALUE" x="86.36" y="-87.63" size="1.778" layer="96" rot="R270"/>
+<attribute name="NAME" x="84.328" y="-91.44" size="1.524" layer="95" rot="R270"/>
+</instance>
+<instance part="X4" gate="-1" x="80.01" y="-88.9" smashed="yes" rot="R270">
+<attribute name="VALUE" x="81.28" y="-87.63" size="1.778" layer="96" rot="R270"/>
+<attribute name="NAME" x="79.248" y="-91.44" size="1.524" layer="95" rot="R270"/>
+</instance>
 </instances>
 <busses>
 </busses>
@@ -771,17 +873,6 @@ Board</text>
 <wire x1="40.64" y1="-40.64" x2="40.64" y2="-17.78" width="1.27" layer="91"/>
 <pinref part="JP1" gate="G$1" pin="2"/>
 <wire x1="40.64" y1="-17.78" x2="53.34" y2="-17.78" width="1.27" layer="91"/>
-</segment>
-</net>
-<net name="N$8" class="0">
-<segment>
-<wire x1="33.02" y1="-114.3" x2="40.64" y2="-114.3" width="0.1524" layer="91"/>
-<pinref part="J1" gate="G$1" pin="VBUS"/>
-<wire x1="40.64" y1="-114.3" x2="40.64" y2="-99.06" width="0.1524" layer="91"/>
-<wire x1="40.64" y1="-99.06" x2="86.36" y2="-99.06" width="0.1524" layer="91"/>
-<wire x1="86.36" y1="-99.06" x2="86.36" y2="-116.84" width="0.1524" layer="91"/>
-<pinref part="CON1" gate="G$1" pin="10"/>
-<wire x1="78.74" y1="-116.84" x2="86.36" y2="-116.84" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$13" class="0">
@@ -823,10 +914,10 @@ Board</text>
 <pinref part="S4" gate="G$1" pin="NO"/>
 <wire x1="66.04" y1="-73.66" x2="68.58" y2="-73.66" width="0.1524" layer="91"/>
 <pinref part="CON1" gate="G$1" pin="2"/>
-<wire x1="78.74" y1="-106.68" x2="81.28" y2="-106.68" width="0.1524" layer="91"/>
-<wire x1="81.28" y1="-106.68" x2="81.28" y2="-101.6" width="0.1524" layer="91"/>
-<wire x1="81.28" y1="-101.6" x2="66.04" y2="-101.6" width="0.1524" layer="91"/>
-<wire x1="66.04" y1="-101.6" x2="66.04" y2="-73.66" width="0.1524" layer="91"/>
+<wire x1="66.04" y1="-99.06" x2="66.04" y2="-73.66" width="0.1524" layer="91"/>
+<wire x1="66.04" y1="-99.06" x2="86.36" y2="-99.06" width="0.1524" layer="91"/>
+<wire x1="86.36" y1="-99.06" x2="86.36" y2="-106.68" width="0.1524" layer="91"/>
+<wire x1="86.36" y1="-106.68" x2="78.74" y2="-106.68" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$12" class="0">
@@ -841,10 +932,10 @@ Board</text>
 <net name="N$14" class="0">
 <segment>
 <pinref part="CON1" gate="G$1" pin="4"/>
-<wire x1="78.74" y1="-109.22" x2="99.06" y2="-109.22" width="0.1524" layer="91"/>
-<wire x1="99.06" y1="-109.22" x2="99.06" y2="-73.66" width="0.1524" layer="91"/>
+<wire x1="78.74" y1="-109.22" x2="106.68" y2="-109.22" width="0.1524" layer="91"/>
+<wire x1="106.68" y1="-109.22" x2="106.68" y2="-73.66" width="0.1524" layer="91"/>
 <pinref part="S4" gate="G$1" pin="L+"/>
-<wire x1="99.06" y1="-73.66" x2="93.98" y2="-73.66" width="0.1524" layer="91"/>
+<wire x1="106.68" y1="-73.66" x2="93.98" y2="-73.66" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$15" class="0">
@@ -874,17 +965,6 @@ Board</text>
 <junction x="15.24" y="-88.9"/>
 </segment>
 </net>
-<net name="N$18" class="0">
-<segment>
-<wire x1="91.44" y1="-114.3" x2="91.44" y2="-83.82" width="0.1524" layer="91"/>
-<wire x1="91.44" y1="-83.82" x2="-22.86" y2="-83.82" width="0.1524" layer="91"/>
-<wire x1="-22.86" y1="-83.82" x2="-22.86" y2="-76.2" width="0.1524" layer="91"/>
-<pinref part="S2" gate="G$1" pin="NC"/>
-<wire x1="-22.86" y1="-76.2" x2="-17.78" y2="-76.2" width="0.1524" layer="91"/>
-<pinref part="CON1" gate="G$1" pin="8"/>
-<wire x1="78.74" y1="-114.3" x2="91.44" y2="-114.3" width="0.1524" layer="91"/>
-</segment>
-</net>
 <net name="N$19" class="0">
 <segment>
 <pinref part="CON1" gate="G$1" pin="9"/>
@@ -903,14 +983,14 @@ Board</text>
 <net name="N$20" class="0">
 <segment>
 <pinref part="CON1" gate="G$1" pin="12"/>
-<wire x1="78.74" y1="-119.38" x2="104.14" y2="-119.38" width="0.1524" layer="91"/>
-<wire x1="104.14" y1="-119.38" x2="104.14" y2="-71.12" width="0.1524" layer="91"/>
+<wire x1="78.74" y1="-119.38" x2="109.22" y2="-119.38" width="0.1524" layer="91"/>
+<wire x1="109.22" y1="-119.38" x2="109.22" y2="-71.12" width="0.1524" layer="91"/>
 <pinref part="S1" gate="G$1" pin="L-"/>
-<wire x1="104.14" y1="-71.12" x2="104.14" y2="-58.42" width="0.1524" layer="91"/>
-<wire x1="104.14" y1="-58.42" x2="104.14" y2="-40.64" width="0.1524" layer="91"/>
-<wire x1="104.14" y1="-40.64" x2="68.58" y2="-40.64" width="0.1524" layer="91"/>
-<wire x1="104.14" y1="-58.42" x2="53.34" y2="-58.42" width="0.1524" layer="91"/>
-<junction x="104.14" y="-58.42"/>
+<wire x1="109.22" y1="-71.12" x2="109.22" y2="-58.42" width="0.1524" layer="91"/>
+<wire x1="109.22" y1="-58.42" x2="109.22" y2="-40.64" width="0.1524" layer="91"/>
+<wire x1="109.22" y1="-40.64" x2="68.58" y2="-40.64" width="0.1524" layer="91"/>
+<wire x1="109.22" y1="-58.42" x2="53.34" y2="-58.42" width="0.1524" layer="91"/>
+<junction x="109.22" y="-58.42"/>
 <wire x1="53.34" y1="-58.42" x2="20.32" y2="-58.42" width="0.1524" layer="91"/>
 <wire x1="20.32" y1="-58.42" x2="15.24" y2="-58.42" width="0.1524" layer="91"/>
 <wire x1="15.24" y1="-58.42" x2="15.24" y2="-71.12" width="0.1524" layer="91"/>
@@ -921,8 +1001,8 @@ Board</text>
 <wire x1="53.34" y1="-71.12" x2="53.34" y2="-58.42" width="0.1524" layer="91"/>
 <junction x="53.34" y="-58.42"/>
 <pinref part="S4" gate="G$1" pin="L-"/>
-<wire x1="93.98" y1="-71.12" x2="104.14" y2="-71.12" width="0.1524" layer="91"/>
-<junction x="104.14" y="-71.12"/>
+<wire x1="93.98" y1="-71.12" x2="109.22" y2="-71.12" width="0.1524" layer="91"/>
+<junction x="109.22" y="-71.12"/>
 <pinref part="S3" gate="G$1" pin="COM"/>
 <wire x1="25.4" y1="-71.12" x2="20.32" y2="-71.12" width="0.1524" layer="91"/>
 <wire x1="20.32" y1="-71.12" x2="20.32" y2="-58.42" width="0.1524" layer="91"/>
@@ -948,6 +1028,42 @@ Board</text>
 <pinref part="D1" gate="1" pin="C"/>
 <pinref part="JP2" gate="G$1" pin="1"/>
 <wire x1="27.94" y1="-15.24" x2="5.08" y2="-15.24" width="1.27" layer="91"/>
+</segment>
+</net>
+<net name="N$18" class="0">
+<segment>
+<pinref part="CON1" gate="G$1" pin="10"/>
+<wire x1="78.74" y1="-116.84" x2="104.14" y2="-116.84" width="0.1524" layer="91"/>
+<wire x1="104.14" y1="-116.84" x2="104.14" y2="-81.28" width="0.1524" layer="91"/>
+<pinref part="X1" gate="-1" pin="1"/>
+<wire x1="97.79" y1="-81.28" x2="104.14" y2="-81.28" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$25" class="0">
+<segment>
+<pinref part="S2" gate="G$1" pin="NC"/>
+<wire x1="-22.86" y1="-81.28" x2="-22.86" y2="-76.2" width="0.1524" layer="91"/>
+<wire x1="-22.86" y1="-76.2" x2="-17.78" y2="-76.2" width="0.1524" layer="91"/>
+<pinref part="X2" gate="-1" pin="1"/>
+<wire x1="-22.86" y1="-81.28" x2="92.71" y2="-81.28" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$8" class="0">
+<segment>
+<pinref part="J1" gate="G$1" pin="VBUS"/>
+<wire x1="33.02" y1="-114.3" x2="40.64" y2="-114.3" width="0.1524" layer="91"/>
+<pinref part="X4" gate="-1" pin="1"/>
+<wire x1="80.01" y1="-86.36" x2="40.64" y2="-86.36" width="0.1524" layer="91"/>
+<wire x1="40.64" y1="-86.36" x2="40.64" y2="-114.3" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$28" class="0">
+<segment>
+<pinref part="X3" gate="-1" pin="1"/>
+<wire x1="85.09" y1="-86.36" x2="90.17" y2="-86.36" width="0.1524" layer="91"/>
+<wire x1="90.17" y1="-86.36" x2="90.17" y2="-114.3" width="0.1524" layer="91"/>
+<pinref part="CON1" gate="G$1" pin="8"/>
+<wire x1="90.17" y1="-114.3" x2="78.74" y2="-114.3" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>
