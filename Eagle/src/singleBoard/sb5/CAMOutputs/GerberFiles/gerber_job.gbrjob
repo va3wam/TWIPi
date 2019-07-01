@@ -1,11 +1,11 @@
 {
     "Header": {
         "Comment": "All values are metric (mm)",
-        "CreationDate": "2019-06-18T03:59:28Z",
+        "CreationDate": "2019-06-20T01:12:06Z",
         "GenerationSoftware": {
             "Application": "EAGLE",
             "Vendor": "Autodesk",
-            "Version": "9.4.0"
+            "Version": "9.4.2"
         },
         "Part": "Single"
     },
@@ -13,12 +13,12 @@
         "BoardThickness": 1.57,
         "LayerNumber": 2,
         "Name": {
-            "ProjectId": "plu"
+            "ProjectId": "t"
         },
         "Owner": "Doug Elliott <canoe.eh@gmail.com>",
         "Size": {
             "X": 99.06,
-            "Y": 96.591016
+            "Y": 96.591013
         }
     }
 }
