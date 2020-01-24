@@ -1,0 +1,141 @@
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0018,len:4
+load:0x3fff001c,len:1044
+load:0x40078000,len:8896
+load:0x40080400,len:5828
+entry 0x400806ac
+Hello nerds
+<startI2Ctwo> Initialize I2C bus. Line:138 millis:51
+ [startI2Ctwo] Active bus addresses: 68
+ [startI2Ctwo] Scan Completed, 1 I2C Devices found.
+ [startI2Ctwo] LCD found on I2Ctwo as expected at 0x68.
+<initializeIMU_1> Initializing the MPU6050 IMU part 1. Line:246 millis:69
+ [initializeIMU_1]: Checking to see if the IMU is found on I2Ctwo at expected I2C address of 0x68
+ [initializeIMU_1] I2C device found on I2Ctwo at address 0x68
+ [initializeIMU_1] The IMU MPU-6050 found at expected address
+ [initializeIMU-1] Send Who am I request to IMU...
+ [initializeIMU_1] Who Am I response is ok: 0x68
+ [initializeIMU_1] Set up the Gyro registers in the IMU
+<set_gyro_registers> Configure the MPU6050. Line:181 millis:108
+ [set_gyro_registers] Wake up MPU
+ [set_gyro_registers] Set the full scale of the gyro to +/- 250 degrees per second
+ [set_gyro_registers] Set the full scale of the accelerometer to +/- 4g
+ [set_gyro_registers] Set Set Digital Low Pass Filter to ~43Hz to improve the raw data
+ [initializeIMU_1] Gyro started and configured
+ [initializeIMU_1] Waiting to allow MPU to settle down
+<initializeIMU_2> Initializing the MPU6050 IMU part 2. Line:306 millis:148
+ [initializeIMU_2]: Continuing IMU warmup and calibration for address 68
+ [initializeIMU_2] Delay countdown in msec: 10000
+ [initializeIMU_2] Delay countdown in msec: 9000
+ [initializeIMU_2] Delay countdown in msec: 8000
+ [initializeIMU_2] Delay countdown in msec: 7000
+ [initializeIMU_2] Delay countdown in msec: 6000
+ [initializeIMU_2] Delay countdown in msec: 5000
+ [initializeIMU_2] Delay countdown in msec: 4000
+ [initializeIMU_2] Delay countdown in msec: 3000
+ [initializeIMU_2] Delay countdown in msec: 2000
+ [initializeIMU_2] Delay countdown in msec: 1000
+<read_mpu_6050_data> Read MPU6050 registers. Line:218 millis:11142
+ [initializeIMU_2] Create Gyro pitch and yaw offset values by averaging 500 sensor readings...
+ [initializeIMU_2] Gyro calc countdown: 9
+ [initializeIMU_2] Gyro calc countdown: 8
+ [initializeIMU_2] Gyro calc countdown: 7
+ [initializeIMU_2] Gyro calc countdown: 6
+ [initializeIMU_2] Gyro calc countdown: 5
+ [initializeIMU_2] Gyro calc countdown: 4
+ [initializeIMU_2] Gyro calc countdown: 3
+ [initializeIMU_2] Gyro calc countdown: 2
+ [initializeIMU_2] Gyro calc countdown: 1
+ [initializeIMU_2] gyro_yaw_calibration_value= -255740
+ [initializeIMU_2] gyro_pitch_calibration_value= 64
+ [initializeIMU_2] speed override value= 1300
+ [initializeIMU_2]: Balance value. NOTE - this is the balance value only if the robot is standing upright: 461
+ [initializeIMU]: acc_calibration_value currently set to 0
+ [initializeIMU_2] IMU initialization complete.
+14167262 , 2.99 , 3.30 , 0
+15171261 , 3.35 , 2.87 , 0
+16175262 , 3.18 , 3.25 , 0
+17179263 , 2.98 , 2.90 , 0
+18183262 , 2.86 , 2.53 , 0
+19187261 , 0.74 , 0.24 , 1
+20191263 , -1.65 , -2.01 , 1
+21195261 , -1.89 , -1.56 , 1
+22199261 , -2.44 , -0.43 , 1
+23203263 , 0.51 , 0.46 , 1
+24207263 , 0.37 , 0.41 , 1
+25211262 , -0.87 , 4.84 , 1
+26215261 , 10.20 , 23.53 , 1
+27219266 , 30.92 , 38.87 , 1
+28223266 , 42.12 , 44.08 , 1
+29227266 , 42.93 , 42.77 , 1
+30231265 , 42.77 , 42.75 , 1
+31235265 , 42.52 , 42.34 , 1
+32239264 , 42.02 , 39.41 , 1
+33243266 , 40.59 , 41.62 , 1
+34247265 , 41.07 , 40.95 , 1
+35251265 , 43.39 , 38.46 , 1
+36255262 , 39.10 , 37.11 , 1
+37259265 , 41.17 , 40.76 , 1
+38263265 , 41.12 , 40.71 , 1
+39267266 , 40.77 , 41.27 , 1
+40271266 , 41.45 , 40.47 , 1
+41275266 , 43.21 , 38.49 , 1
+42279264 , 42.79 , 48.09 , 1
+43283266 , 52.14 , 50.32 , 1
+44287262 , 56.14 , 56.40 , 1
+45291266 , 56.28 , 52.79 , 1
+46295265 , 55.15 , 44.48 , 1
+47299266 , 44.81 , 43.21 , 1
+48303266 , 48.90 , 65.88 , 1
+49307266 , 62.52 , 62.81 , 1
+50311266 , 63.18 , 62.69 , 1
+51315272 , 62.78 , 63.92 , 1
+52319274 , 62.70 , 64.02 , 1
+53323274 , 62.52 , 61.61 , 1
+54327271 , 62.39 , 61.97 , 1
+55331274 , 59.76 , 59.92 , 1
+56335274 , 55.21 , 36.02 , 1
+57339263 , 29.76 , 20.40 , 1
+58343263 , 20.85 , 20.69 , 1
+59347263 , 18.86 , 21.44 , 1
+60351262 , 18.58 , 14.88 , 1
+61355263 , 12.34 , 9.89 , 1
+62359263 , 10.78 , 13.37 , 1
+63363263 , 11.86 , 14.09 , 1
+64367263 , 10.07 , 8.47 , 1
+65371263 , 7.86 , 7.22 , 1
+66375263 , 7.54 , 6.82 , 1
+67379263 , 6.74 , 6.29 , 1
+68383262 , 6.49 , 4.66 , 1
+69387262 , 5.21 , 4.19 , 1
+70391263 , 4.52 , 4.54 , 1
+71395263 , 4.45 , 4.44 , 1
+72399263 , 4.37 , 4.46 , 1
+73403263 , 6.04 , 1.82 , 1
+74407263 , -3.48 , -6.60 , 1
+75411263 , -7.26 , -7.81 , 1
+76415262 , -7.71 , -7.65 , 1
+77419263 , -15.00 , 15.15 , 1
+78423260 , 42.94 , 90.00 , 1
+79427260 , 79.66 , 90.00 , 1
+80431260 , 89.16 , 90.00 , 1
+81435260 , 89.92 , 90.00 , 1
+82439260 , 89.99 , 90.00 , 1
+83443260 , 89.99 , 90.00 , 1
+Exception in thread rx:
+Traceback (most recent call last):
+  File "C:\Users\DougElliott\.platformio\python27\Lib\threading.py", line 801, in __bootstrap_inner
+    self.run()
+  File "C:\Users\DougElliott\.platformio\python27\Lib\threading.py", line 754, in run
+    self.__target(*self.__args, **self.__kwargs)
+  File "c:\users\dougelliott\.platformio\penv\lib\site-packages\serial\tools\miniterm.py", line 445, in reader
+    data = self.serial.read(self.serial.in_waiting or 1)
+  File "c:\users\dougelliott\.platformio\penv\lib\site-packages\serial\serialwin32.py", line 257, in in_waiting
+    raise SerialException("ClearCommError failed ({!r})".format(ctypes.WinError()))
+SerialException: ClearCommError failed (WindowsError(5, 'Access is denied.'))
+
+
+--- exit ---
