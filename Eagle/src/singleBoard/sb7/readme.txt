@@ -29,3 +29,41 @@ There are about 19 simulated VIAs which should be changed to real VIAs if board 
 -push buttons centred better
 -see if there is an available short USB console cable, and change header to match it.
 
+7C version layout
+-all vias have been converted to true vias, not manual ones
+-resistor R4 no longer functions as a via, & normal soldering is OK
+-power connectors remain unresolved. 
+    - may need to move capacitor to allow right angled connectors. 
+	- may be too tight for them anyway, unless they face outwards?
+-crossed wires for stepper driver STEPDRV2 on board, so all stepper wiring is straight thru
+
+
+References on Wire Gauge / Current capacity
+
+https://www.powerstream.com/Wire_Size.htm    (24AWG for 3.5 amps, stranded?)
+https://www.jst.fr/doc/jst/pdf/current_rating.pdf   (22 AWG for 3.0A)
+https://www.multicable.com/resources/reference-data/current-carrying-capacity-of-copper-conductors/
+https://www.solaris-shop.com/content/American%20Wire%20Gauge%20Conductor%20Size%20Table.pdf
+https://xtronics.com/wiki/Wire-Gauge_Ampacity.html
+https://www.gore.com/IndustrialCableConfigurator/popup_hfr_wirespecs.html
+http://www.learningaboutelectronics.com/Articles/Wire-gauge.php
+https://www.coonerwire.com/amp-chart/
+https://en.wikipedia.org/wiki/American_wire_gauge
+
+Approach: Solder wires to board with pre-installed connectors at ends
+https://www.bc-robotics.com/shop/2-wire-inline-connector/
+https://www.bc-robotics.com/shop/2-pin-jst-sm-plug-receptacle-cable-set/
+https://www.creatroninc.com/product/3-pin-js-m-wire-assembly/
+https://www.creatroninc.com/product/3-pin-js-f-wire-assembly/
+https://www.robotshop.com/en/sfe-130mm-wire-jst-blk-red.html
+https://www.robotshop.com/en/sfe-100mm-wire-jst-blk-blue.html
+
+https://canada.newark.com/w/c/connectors/wire-to-board-connectors/prl/results?st=jst%20cables
+https://canada.newark.com/w/c/cable-wire-cable-assemblies/cable-assemblies/prl/results?st=jst%20cables
+
+https://www.amazon.ca/URBEST-10Pairs-Female-Connector-Battery/dp/B01M13PMIU
+https://solarbotics.com/product/14226
+
+
+
+ 
